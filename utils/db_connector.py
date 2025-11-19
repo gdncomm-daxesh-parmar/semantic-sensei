@@ -53,7 +53,7 @@ class MongoDBConnector:
     
     def get_collection(self, collection_name):
         """Get a MongoDB collection"""
-        if not self.db:
+        if self.db is None:
             raise Exception("Database not connected. Call connect() first.")
         return self.db[collection_name]
     
