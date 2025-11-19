@@ -1,0 +1,111 @@
+Term,CategoryCode,Score,CategoryName
+adidas,SE-1000019,95,Sepatu Lari
+adidas,LI-1000051,85,Sneakers Sports Pria
+adidas,PA-1000012,70,Pakaian Lari Pria
+nike,SE-1000019,95,Sepatu Lari
+nike,LI-1000051,85,Sneakers Sports Pria
+nike,PA-1000012,70,Pakaian Lari Pria
+asics,SE-1000019,95,Sepatu Lari
+asics,LI-1000051,80,Sneakers Sports Pria
+iphone 17,IP-1000001,100,iPhone
+iphone 17,HA-1000003,80,Handphone Lainnya
+rokok,RO-1000046,100,Rokok dan Korek
+hypermart,GR-1000015,95,Groceries
+hypermart,VO-1000053,70,Voucher Belanja Lainnya
+farmers market,GR-1000015,95,Groceries
+vape,RO-1000033,100,Rokok Elektrik
+vape,PE-1001067,70,Pengganti Rokok
+alfamart,GR-1000015,90,Groceries
+alfamart,VO-1000053,80,Voucher Belanja Lainnya
+onitsuka tiger,LI-1000051,90,Sneakers Sports Pria
+onitsuka tiger,SN-1000001,85,Sepatu Sneaker Pria
+rokok 1 slop,RO-1000046,100,Rokok dan Korek
+wings,GR-1000015,60,Groceries
+wings,MA-1000162,50,Makanan Instan
+iphone xr,IP-1000001,100,iPhone
+liquid,RO-1000033,90,Rokok Elektrik
+wardah,PE-1001077,90,Perawatan Wajah
+wardah,RI-1000004,85,Riasan Wajah
+hush puppies,SE-1000012,85,Sepatu Kasual
+hush puppies,TA-1000324,80,Tas Wanita Branded
+hush puppies,TA-1000014,70,Tas Selempang Pria
+eiger,TA-1000015,90,Tas Ransel Pria
+eiger,PE-1000113,85,Peralatan Hiking & Camping
+eiger,PA-1000081,70,Pakaian Olahraga Lainnya
+rokok elektrik vape,RO-1000033,100,Rokok Elektrik
+uniqlo,BA-1000010,85,Baju Kasual
+uniqlo,AT-1000001,80,Atasan Wanita
+flazz,KA-1000215,100,Kartu Uang Elektronik
+pods vape,RO-1000033,95,Rokok Elektrik
+implora,RI-1000005,90,Riasan Bibir
+implora,RI-1000004,85,Riasan Wajah
+liquid pod,RO-1000033,95,Rokok Elektrik
+rokok hs,RO-1000046,100,Rokok dan Korek
+foom,RO-1000033,95,Rokok Elektrik
+asics gel kayano 31,SE-1000019,100,Sepatu Lari
+under armour,PA-1000081,85,Pakaian Olahraga Lainnya
+under armour,SE-1000019,80,Sepatu Lari
+under armour,LI-1000051,75,Sneakers Sports Pria
+iphone 17 pro max,IP-1000001,100,iPhone
+tiptop online official store,GR-1000015,90,Groceries
+h&m,BA-1000010,85,Baju Kasual
+h&m,AT-1000001,80,Atasan Wanita
+nutrilon royal 3,SU-1000095,100,Susu Formula & Makanan Bayi
+tiptop,GR-1000015,90,Groceries
+pesan tiket pesawat,TR-1000077,90,Jasa Transportasi
+pesan tiket pesawat,WO-1000026,60,Wonderful Indonesia
+butik emas antam official store,GO-1000145,95,Gold
+butik emas antam official store,LO-1000060,80,Logam Mulia Lainnya
+stanley,PE-1000189,90,Peralatan Minum
+stanley,PE-1000129,40,Perkakas Tangan
+baju,BA-1000010,70,Baju Kasual
+baju,AT-1000001,70,Atasan Wanita
+baju,PA-1000033,60,Pakaian Anak Laki-Laki
+blibli,BL-1000122,70,Blibli GiftCard
+liquid vape,RO-1000033,95,Rokok Elektrik
+onitsuka,LI-1000051,85,Sneakers Sports Pria
+onitsuka,SN-1000001,85,Sepatu Sneaker Pria
+iphone 17 pro,IP-1000001,100,iPhone
+natur,PE-1000224,90,Perawatan Rambut & Kulit Kepala
+natur,SH-1000011,80,Shampoo
+iphone xr ibox,IP-1000001,100,iPhone
+salsa,RI-1000004,70,Riasan Wajah
+salsa,RI-1000005,70,Riasan Bibir
+polytron,TE-1000004,80,TV LCD/LED
+polytron,ME-1000185,75,Mesin Cuci
+polytron,SP-1000006,70,Speaker
+on,SE-1000019,90,Sepatu Lari
+on,LI-1000051,80,Sneakers Sports Pria
+birkenstock,SA-1000009,90,Sandal Wanita
+birkenstock,SA-1000002,90,Sandal Pria
+pods,RO-1000033,90,Rokok Elektrik
+careso,PA-1000047,85,Parfum Wanita
+careso,BO-1000031,80,Body Care & Treatments
+goojodoq,AK-1000003,85,Aksesoris Handphone & Tablet Lainnya
+goojodoq,AK-1000006,80,Aksesoris Komputer Lainnya
+decathlon,OL-1000003,95,Olahraga & Luar Ruang
+decathlon,PE-1000066,80,Peralatan Fitness
+sony,KA-1000007,85,Kamera DSLR
+sony,HE-1000001,85,Earphone & Headphone
+sony,TE-1000004,70,TV LCD/LED
+rokok sampoerna mild,RO-1000046,100,Rokok dan Korek
+rokok online,RO-1000046,100,Rokok dan Korek
+hotel,TI-1000112,70,Tiket Atraksi & Hiburan Domestik
+hotel,VO-1000142,60,Voucher Hiburan
+miniso,HO-1000074,70,Home Appliances Lainnya
+miniso,AK-1000079,70,Aksesoris Wanita Lainnya
+miniso,TA-1000014,60,Tas Selempang Pria
+iqos,RO-1000033,90,Rokok Elektrik
+iqos,RO-1000046,60,Rokok dan Korek
+celana,CE-1000001,80,Celana Kasual Pria
+celana,BA-1000023,80,Bawahan Wanita
+celana,CE-1000002,70,Celana Pendek Pria
+iphone xr second,IP-1000001,90,iPhone
+iphone xr second,HA-1000003,80,Handphone Lainnya
+pulsa,KA-1000224,80,Kartu Perdana
+pulsa,VO-1000083,60,Voucher BBM & Transportasi
+nike official store,SE-1000019,95,Sepatu Lari
+nike official store,LI-1000051,85,Sneakers Sports Pria
+xiaomi 17 pro,AN-1000001,95,Android
+xiaomi 17 pro,HA-1000003,80,Handphone Lainnya
+rokok surya 16,RO-1000046,100,Rokok dan Korek
