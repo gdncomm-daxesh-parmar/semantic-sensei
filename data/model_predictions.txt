@@ -1,0 +1,297 @@
+results:
+  - term: adidas
+    predictions:
+      - SE-1000019: 95
+      - LI-1000051: 85
+      - PA-1000012: 70
+    names: Sepatu Lari, Sneakers Sports Pria, Pakaian Lari Pria
+  - term: nike
+    predictions:
+      - SE-1000019: 95
+      - LI-1000051: 85
+      - PA-1000012: 70
+    names: Sepatu Lari, Sneakers Sports Pria, Pakaian Lari Pria
+  - term: asics
+    predictions:
+      - SE-1000019: 95
+      - LI-1000051: 80
+    names: Sepatu Lari, Sneakers Sports Pria
+  - term: iphone 17
+    predictions:
+      - IP-1000001: 100
+      - HA-1000003: 80
+    names: iPhone, Handphone Lainnya
+  - term: rokok
+    predictions:
+      - RO-1000046: 100
+    names: Rokok dan Korek
+  - term: hypermart
+    predictions:
+      - GR-1000015: 95
+      - VO-1000053: 70
+    names: Groceries, Voucher Belanja Lainnya
+  - term: farmers market
+    predictions:
+      - GR-1000015: 95
+    names: Groceries
+  - term: vape
+    predictions:
+      - RO-1000033: 100
+      - PE-1001067: 70
+    names: Rokok Elektrik, Pengganti Rokok
+  - term: alfamart
+    predictions:
+      - GR-1000015: 90
+      - VO-1000053: 80
+    names: Groceries, Voucher Belanja Lainnya
+  - term: onitsuka tiger
+    predictions:
+      - LI-1000051: 90
+      - SN-1000001: 85
+    names: Sneakers Sports Pria, Sepatu Sneaker Pria
+  - term: rokok 1 slop
+    predictions:
+      - RO-1000046: 100
+    names: Rokok dan Korek
+  - term: wings
+    predictions:
+      - GR-1000015: 60
+      - MA-1000162: 50
+    names: Groceries, Makanan Instan
+  - term: iphone xr
+    predictions:
+      - IP-1000001: 100
+    names: iPhone
+  - term: liquid
+    predictions:
+      - RO-1000033: 90
+    names: Rokok Elektrik
+  - term: wardah
+    predictions:
+      - PE-1001077: 90
+      - RI-1000004: 85
+    names: Perawatan Wajah, Riasan Wajah
+  - term: hush puppies
+    predictions:
+      - SE-1000012: 85
+      - TA-1000324: 80
+      - TA-1000014: 70
+    names: Sepatu Kasual, Tas Wanita Branded, Tas Selempang Pria
+  - term: eiger
+    predictions:
+      - TA-1000015: 90
+      - PE-1000113: 85
+      - PA-1000081: 70
+    names: Tas Ransel Pria, Peralatan Hiking & Camping, Pakaian Olahraga Lainnya
+  - term: rokok elektrik vape
+    predictions:
+      - RO-1000033: 100
+    names: Rokok Elektrik
+  - term: uniqlo
+    predictions:
+      - BA-1000010: 85
+      - AT-1000001: 80
+    names: Baju Kasual, Atasan Wanita
+  - term: flazz
+    predictions:
+      - KA-1000215: 100
+    names: Kartu Uang Elektronik
+  - term: pods vape
+    predictions:
+      - RO-1000033: 95
+    names: Rokok Elektrik
+  - term: implora
+    predictions:
+      - RI-1000005: 90
+      - RI-1000004: 85
+    names: Riasan Bibir, Riasan Wajah
+  - term: liquid pod
+    predictions:
+      - RO-1000033: 95
+    names: Rokok Elektrik
+  - term: rokok hs
+    predictions:
+      - RO-1000046: 100
+    names: Rokok dan Korek
+  - term: foom
+    predictions:
+      - RO-1000033: 95
+    names: Rokok Elektrik
+  - term: asics gel kayano 31
+    predictions:
+      - SE-1000019: 100
+    names: Sepatu Lari
+  - term: under armour
+    predictions:
+      - PA-1000081: 85
+      - SE-1000019: 80
+      - LI-1000051: 75
+    names: Pakaian Olahraga Lainnya, Sepatu Lari, Sneakers Sports Pria
+  - term: iphone 17 pro max
+    predictions:
+      - IP-1000001: 100
+    names: iPhone
+  - term: tiptop online official store
+    predictions:
+      - GR-1000015: 90
+    names: Groceries
+  - term: h&m
+    predictions:
+      - BA-1000010: 85
+      - AT-1000001: 80
+    names: Baju Kasual, Atasan Wanita
+  - term: nutrilon royal 3
+    predictions:
+      - SU-1000095: 100
+    names: Susu Formula & Makanan Bayi
+  - term: tiptop
+    predictions:
+      - GR-1000015: 90
+    names: Groceries
+  - term: pesan tiket pesawat
+    predictions:
+      - TR-1000077: 90
+      - WO-1000026: 60
+    names: Jasa Transportasi, Wonderful Indonesia
+  - term: butik emas antam official store
+    predictions:
+      - GO-1000145: 95
+      - LO-1000060: 80
+    names: Gold, Logam Mulia Lainnya
+  - term: stanley
+    predictions:
+      - PE-1000189: 90
+      - PE-1000129: 40
+    names: Peralatan Minum, Perkakas Tangan
+  - term: baju
+    predictions:
+      - BA-1000010: 70
+      - AT-1000001: 70
+      - PA-1000033: 60
+    names: Baju Kasual, Atasan Wanita, Pakaian Anak Laki-Laki
+  - term: blibli
+    predictions:
+      - BL-1000122: 70
+    names: Blibli GiftCard
+  - term: liquid vape
+    predictions:
+      - RO-1000033: 95
+    names: Rokok Elektrik
+  - term: onitsuka
+    predictions:
+      - LI-1000051: 85
+      - SN-1000001: 85
+    names: Sneakers Sports Pria, Sepatu Sneaker Pria
+  - term: iphone 17 pro
+    predictions:
+      - IP-1000001: 100
+    names: iPhone
+  - term: natur
+    predictions:
+      - PE-1000224: 90
+      - SH-1000011: 80
+    names: Perawatan Rambut & Kulit Kepala, Shampoo
+  - term: iphone xr ibox
+    predictions:
+      - IP-1000001: 100
+    names: iPhone
+  - term: salsa
+    predictions:
+      - RI-1000004: 70
+      - RI-1000005: 70
+    names: Riasan Wajah, Riasan Bibir
+  - term: polytron
+    predictions:
+      - TE-1000004: 80
+      - ME-1000185: 75
+      - SP-1000006: 70
+    names: TV LCD/LED, Mesin Cuci, Speaker
+  - term: on
+    predictions:
+      - SE-1000019: 90
+      - LI-1000051: 80
+    names: Sepatu Lari, Sneakers Sports Pria
+  - term: birkenstock
+    predictions:
+      - SA-1000009: 90
+      - SA-1000002: 90
+    names: Sandal Wanita, Sandal Pria
+  - term: pods
+    predictions:
+      - RO-1000033: 90
+    names: Rokok Elektrik
+  - term: careso
+    predictions:
+      - PA-1000047: 85
+      - BO-1000031: 80
+    names: Parfum Wanita, Body Care & Treatments
+  - term: goojodoq
+    predictions:
+      - AK-1000003: 85
+      - AK-1000006: 80
+    names: Aksesoris Handphone & Tablet Lainnya, Aksesoris Komputer Lainnya
+  - term: decathlon
+    predictions:
+      - OL-1000003: 95
+      - PE-1000066: 80
+    names: Olahraga & Luar Ruang, Peralatan Fitness
+  - term: sony
+    predictions:
+      - KA-1000007: 85
+      - HE-1000001: 85
+      - TE-1000004: 70
+    names: Kamera DSLR, Earphone & Headphone, TV LCD/LED
+  - term: rokok sampoerna mild
+    predictions:
+      - RO-1000046: 100
+    names: Rokok dan Korek
+  - term: rokok online
+    predictions:
+      - RO-1000046: 100
+    names: Rokok dan Korek
+  - term: hotel
+    predictions:
+      - TI-1000112: 70
+      - VO-1000142: 60
+    names: Tiket Atraksi & Hiburan Domestik, Voucher Hiburan
+  - term: miniso
+    predictions:
+      - HO-1000074: 70
+      - AK-1000079: 70
+      - TA-1000014: 60
+    names: Home Appliances Lainnya, Aksesoris Wanita Lainnya, Tas Selempang Pria
+  - term: iqos
+    predictions:
+      - RO-1000033: 90
+      - RO-1000046: 60
+    names: Rokok Elektrik, Rokok dan Korek
+  - term: celana
+    predictions:
+      - CE-1000001: 80
+      - BA-1000023: 80
+      - CE-1000002: 70
+    names: Celana Kasual Pria, Bawahan Wanita, Celana Pendek Pria
+  - term: iphone xr second
+    predictions:
+      - IP-1000001: 90
+      - HA-1000003: 80
+    names: iPhone, Handphone Lainnya
+  - term: pulsa
+    predictions:
+      - KA-1000224: 80
+      - VO-1000083: 60
+    names: Kartu Perdana, Voucher BBM & Transportasi
+  - term: nike official store
+    predictions:
+      - SE-1000019: 95
+      - LI-1000051: 85
+    names: Sepatu Lari, Sneakers Sports Pria
+  - term: xiaomi 17 pro
+    predictions:
+      - AN-1000001: 95
+      - HA-1000003: 80
+    names: Android, Handphone Lainnya
+  - term: rokok surya 16
+    predictions:
+      - RO-1000046: 100
+    names: Rokok dan Korek
