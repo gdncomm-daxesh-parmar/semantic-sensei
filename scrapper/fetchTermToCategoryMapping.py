@@ -355,10 +355,10 @@ def main():
     # Save all results (including empty ones)
     if results:
         # Save in the requested format: searchTerm -> c3_code(c3_name):count
-        save_term_category_mappings(results, "term_to_category_mapping.txt")
+        save_term_category_mappings(results, "../data/term_to_category_mapping.txt")
         
         # Also save detailed CSV for analysis
-        save_detailed_mappings(results, "term_to_category_detailed.csv")
+        save_detailed_mappings(results, "../data/term_to_category_detailed.csv")
         
         print(f"\n✓ Results saved:")
         print(f"  - term_to_category_mapping.txt ({len(results)} terms)")
