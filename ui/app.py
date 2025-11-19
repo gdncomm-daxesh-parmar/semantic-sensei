@@ -4,6 +4,7 @@ Streamlit UI for Search Term Category Management
 
 import streamlit as st
 import pandas as pd
+import plotly.graph_objects as go
 import sys
 import os
 
@@ -153,6 +154,115 @@ def delete_term(term):
     return result.deleted_count > 0
 
 
+def get_trends_data(term):
+    """Get CTR/CVR trends data for a term"""
+    connector = get_db()
+    if not connector:
+        return None
+    
+    collection = connector.get_collection('search_term_trends')
+    return collection.find_one({'searchTerm': term})
+
+
+@st.dialog("CTR/CVR Trends", width="large")
+def show_trends_dialog(term):
+    """Dialog for showing CTR/CVR trends"""
+    st.subheader(f"📈 Performance Trends: **{term}**")
+    
+    # Get trends data
+    trends_data = get_trends_data(term)
+    
+    if not trends_data:
+        st.warning("No trends data available for this term")
+        return
+    
+    ctr = trends_data.get('ctr', [])
+    cvr = trends_data.get('cvr', [])
+    timestamps = trends_data.get('timestamps', [])
+    
+    if not ctr or not cvr or not timestamps:
+        st.warning("Incomplete trends data")
+        return
+    
+    # Create dual-axis chart
+    fig = go.Figure()
+    
+    # Add CTR line
+    fig.add_trace(go.Scatter(
+        x=timestamps,
+        y=ctr,
+        name='CTR (Click-Through Rate)',
+        mode='lines+markers',
+        line=dict(color='#1971c2', width=3),
+        marker=dict(size=8),
+        yaxis='y'
+    ))
+    
+    # Add CVR line
+    fig.add_trace(go.Scatter(
+        x=timestamps,
+        y=cvr,
+        name='CVR (Conversion Rate)',
+        mode='lines+markers',
+        line=dict(color='#28a745', width=3),
+        marker=dict(size=8),
+        yaxis='y'
+    ))
+    
+    # Update layout
+    fig.update_layout(
+        title=dict(
+            text=f'Performance Trends for "{term}"',
+            font=dict(size=20, color='#212529')
+        ),
+        xaxis=dict(
+            title='Date',
+            showgrid=True,
+            gridcolor='#e0e0e0'
+        ),
+        yaxis=dict(
+            title='Rate (0-1)',
+            showgrid=True,
+            gridcolor='#e0e0e0',
+            range=[0, 1]
+        ),
+        hovermode='x unified',
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        ),
+        height=500,
+        template='plotly_white'
+    )
+    
+    # Display chart
+    st.plotly_chart(fig, use_container_width=True)
+    
+    # Show statistics
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.metric("Avg CTR", f"{sum(ctr)/len(ctr):.3f}")
+    
+    with col2:
+        st.metric("Avg CVR", f"{sum(cvr)/len(cvr):.3f}")
+    
+    with col3:
+        latest_ctr = ctr[-1] if ctr else 0
+        prev_ctr = ctr[-2] if len(ctr) > 1 else latest_ctr
+        ctr_change = ((latest_ctr - prev_ctr) / prev_ctr * 100) if prev_ctr > 0 else 0
+        st.metric("Latest CTR", f"{latest_ctr:.3f}", f"{ctr_change:+.1f}%")
+    
+    with col4:
+        latest_cvr = cvr[-1] if cvr else 0
+        prev_cvr = cvr[-2] if len(cvr) > 1 else latest_cvr
+        cvr_change = ((latest_cvr - prev_cvr) / prev_cvr * 100) if prev_cvr > 0 else 0
+        st.metric("Latest CVR", f"{latest_cvr:.3f}", f"{cvr_change:+.1f}%")
+
+
 @st.dialog("Manage AI Categories", width="large")
 def edit_term_dialog(term):
     """Dialog for editing term categories"""
@@ -180,37 +290,44 @@ def edit_term_dialog(term):
         model = term_data.get('modelIdentifiedCategories', [])
         if model:
             for idx, cat in enumerate(model):
-                with st.container():
-                    col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
-                    
-                    with col1:
+                col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
+                
+                with col1:
+                    # Add MANUAL indicator for manually added categories
+                    if cat['score'] == 0:
+                        st.markdown(f"**{cat['name']}** ✋")
+                        st.caption(f"Code: {cat['code']} | 🏷️ Manually Added")
+                    else:
                         st.markdown(f"**{cat['name']}**")
                         st.caption(f"Code: {cat['code']}")
-                    
-                    with col2:
-                        st.metric("Score", cat['score'])
-                    
-                    with col3:
-                        new_boost = st.number_input(
-                            "Boost",
-                            min_value=0,
-                            max_value=1000,
-                            value=cat['boostValue'],
-                            step=10,
-                            key=f"boost_{term}_{cat['code']}_{idx}",
-                            label_visibility="visible"
-                        )
-                    
-                    with col4:
-                        if new_boost != cat['boostValue']:
-                            if st.button("💾", key=f"save_{term}_{cat['code']}_{idx}", help="Save changes"):
-                                if update_boost_value(term, cat['code'], new_boost):
-                                    st.success("✓")
-                                    st.rerun()
-                                else:
-                                    st.error("✗")
-                    
-                    st.divider()
+                
+                with col2:
+                    score_label = f"{cat['score']} (Manual)" if cat['score'] == 0 else str(cat['score'])
+                    st.metric("Score", score_label)
+                
+                with col3:
+                    new_boost = st.number_input(
+                        "Boost",
+                        min_value=0,
+                        value=cat['boostValue'],
+                        step=10,
+                        key=f"boost_{term}_{cat['code']}_{idx}",
+                        label_visibility="visible"
+                    )
+                
+                with col4:
+                    if new_boost != cat['boostValue']:
+                        if st.button("💾 Save", key=f"save_{term}_{cat['code']}_{idx}", help="Save changes", use_container_width=True):
+                            if update_boost_value(term, cat['code'], new_boost):
+                                st.success(f"✓ Boost value updated to {new_boost}")
+                                st.balloons()
+                                st.rerun()
+                            else:
+                                st.error("✗ Failed to update")
+                    else:
+                        st.markdown("<div style='height: 38px;'></div>", unsafe_allow_html=True)
+                
+                st.divider()
         else:
             st.info("No model categories available")
     
@@ -239,14 +356,16 @@ def edit_term_dialog(term):
                 if selected_code in existing_codes:
                     st.warning("⚠️ Category already exists")
                 else:
-                    boost = st.number_input("Boost Value", min_value=0, max_value=1000, value=100, step=10, key=f"boost_add_{term}")
+                    boost = st.number_input("Boost Value", min_value=0, value=100, step=10, key=f"boost_add_{term}")
+                    st.caption("💡 Enter any integer value (e.g., 50, 100, 200, 500, etc.)")
                     
                     if st.button("➕ Add Category", type="primary", use_container_width=True, key=f"add_btn_{term}"):
                         if add_model_category(term, selected_code, selected_name, boost):
-                            st.success(f"✓ Added {selected_name}")
+                            st.success(f"✓ Successfully added '{selected_name}' with boost value {boost}")
+                            st.balloons()
                             st.rerun()
                         else:
-                            st.error("✗ Failed to add")
+                            st.error("✗ Failed to add category")
         
         with col2:
             st.markdown("### 🗑️ Remove Category")
@@ -254,22 +373,26 @@ def edit_term_dialog(term):
             model = term_data.get('modelIdentifiedCategories', [])
             if model:
                 for cat in model:
-                    with st.container():
-                        col_info, col_btn = st.columns([3, 1])
-                        
-                        with col_info:
+                    col_info, col_btn = st.columns([3, 1])
+                    
+                    with col_info:
+                        # Add MANUAL indicator
+                        if cat['score'] == 0:
+                            st.markdown(f"**{cat['name']}** ✋")
+                            st.caption(f"{cat['code']} | Score: {cat['score']} (Manual) | Boost: {cat['boostValue']}")
+                        else:
                             st.markdown(f"**{cat['name']}**")
                             st.caption(f"{cat['code']} | Score: {cat['score']} | Boost: {cat['boostValue']}")
-                        
-                        with col_btn:
-                            if st.button("🗑️", key=f"remove_{term}_{cat['code']}", help="Remove", use_container_width=True):
-                                if remove_model_category(term, cat['code']):
-                                    st.success("✓")
-                                    st.rerun()
-                                else:
-                                    st.error("✗")
-                        
-                        st.divider()
+                    
+                    with col_btn:
+                        if st.button("🗑️ Remove", key=f"remove_{term}_{cat['code']}", help="Remove category", use_container_width=True, type="secondary"):
+                            if remove_model_category(term, cat['code']):
+                                st.success(f"✓ Removed '{cat['name']}' from AI categories")
+                                st.rerun()
+                            else:
+                                st.error("✗ Failed to remove")
+                    
+                    st.divider()
             else:
                 st.info("No categories to remove")
     
@@ -294,10 +417,10 @@ def edit_term_dialog(term):
     with col2:
         if st.button("🗑️ Delete Term", type="secondary", use_container_width=True, key=f"delete_term_{term}"):
             if delete_term(term):
-                st.success(f"✓ Deleted '{term}'")
+                st.success(f"✓ Successfully deleted term '{term}' and all its categories")
                 st.rerun()
             else:
-                st.error("✗ Failed to delete")
+                st.error("✗ Failed to delete term")
 
 
 # Main UI - Display Logo and Title
@@ -546,6 +669,9 @@ if terms:
                 <div style="font-size: 0.8em; color: #666; margin-top: 2px;">Score = AI Confidence | Boost = Weight</div>
             </div>
             <div style="flex: 0.7; padding-right: 5px; text-align: center;">
+                <strong>Trends</strong>
+            </div>
+            <div style="flex: 0.7; padding-right: 5px; text-align: center;">
                 <strong>Edit</strong>
             </div>
             <div style="flex: 0.7; text-align: center;">
@@ -568,11 +694,7 @@ if terms:
         # Format catalog categories (styled) - show up to 5
         catalog_parts = []
         for cat in catalog_cats[:5]:
-            cat_html = f"""
-            <div style="display: inline-block; margin: 1px 0; padding: 3px 6px; background-color: #e7f5ff; border-radius: 3px; border-left: 2px solid #1971c2;">
-                <span style="font-weight: 500; color: #212529; font-size: 0.9em;">{cat['name']}</span>
-            </div>
-            """
+            cat_html = f'<div style="display: inline-block; margin: 1px 0; padding: 3px 6px; background-color: #e7f5ff; border-radius: 3px; border-left: 2px solid #1971c2;"><span style="font-weight: 500; color: #212529; font-size: 0.9em;">{cat["name"]}</span></div>'
             catalog_parts.append(cat_html)
         
         if catalog_parts:
@@ -602,15 +724,13 @@ if terms:
             else:
                 boost_color = "#6c757d"  # Gray for default
             
-            cat_html = f"""
-            <div style="display: inline-block; margin: 1px 0; padding: 3px 6px; background-color: #f8f9fa; border-radius: 3px; border-left: 2px solid {score_color};">
-                <span style="font-weight: 500; color: #212529; font-size: 0.9em;">{cat['name']}</span>
-                <span style="margin-left: 6px;">
-                    <span title="AI Confidence Score" style="background-color: {score_color}; color: white; padding: 1px 4px; border-radius: 2px; font-size: 0.75em; font-weight: 600;">Score: {score}</span>
-                    <span title="Boost Weight Value" style="background-color: {boost_color}; color: white; padding: 1px 4px; border-radius: 2px; font-size: 0.75em; margin-left: 3px; font-weight: 600;">Boost: {boost}</span>
-                </span>
-            </div>
-            """
+            # Add MANUAL badge for manually added categories (score = 0)
+            manual_badge = ""
+            if score == 0:
+                manual_badge = '<span title="Manually Added Category" style="background-color: #6c757d; color: white; padding: 1px 4px; border-radius: 2px; font-size: 0.75em; font-weight: 600; margin-left: 3px;">✋ MANUAL</span>'
+            
+            cat_html = f'<div style="display: inline-block; margin: 1px 0; padding: 3px 6px; background-color: #f8f9fa; border-radius: 3px; border-left: 2px solid {score_color};"><span style="font-weight: 500; color: #212529; font-size: 0.9em;">{cat["name"]}</span><span style="margin-left: 6px;"><span title="AI Confidence Score" style="background-color: {score_color}; color: white; padding: 1px 4px; border-radius: 2px; font-size: 0.75em; font-weight: 600;">Score: {score}</span><span title="Boost Weight Value" style="background-color: {boost_color}; color: white; padding: 1px 4px; border-radius: 2px; font-size: 0.75em; margin-left: 3px; font-weight: 600;">Boost: {boost}</span>{manual_badge}</span></div>'
+            
             model_parts.append(cat_html)
         
         if model_parts:
@@ -618,7 +738,7 @@ if terms:
         else:
             model_display = "—"
         
-        col1, col2, col3, col4, col5 = st.columns([2, 3, 3, 0.7, 0.7])
+        col1, col2, col3, col4, col5, col6 = st.columns([2, 3, 3, 0.7, 0.7, 0.7])
         
         with col1:
             st.markdown(f"{term}")
@@ -630,10 +750,14 @@ if terms:
             st.markdown(f"{model_display}", unsafe_allow_html=True)
         
         with col4:
+            if st.button("📈", key=f"trends_{term}_{idx}", use_container_width=True, help="Show trends"):
+                show_trends_dialog(term)
+        
+        with col5:
             if st.button("✏️", key=f"edit_{term}_{idx}", use_container_width=True, help="Edit categories"):
                 edit_term_dialog(term)
         
-        with col5:
+        with col6:
             if st.button("🗑️", key=f"delete_{term}_{idx}", use_container_width=True, help="Delete term", type="secondary"):
                 if delete_term(term):
                     st.success("✓ Deleted")
