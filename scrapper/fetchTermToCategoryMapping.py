@@ -176,6 +176,26 @@ def read_search_terms(csv_file: str, limit: int = None) -> List[str]:
         print(f"Error reading CSV file: {e}")
         return []
 
+def load_checkpoint(checkpoint_file: str = "progress_checkpoint.json") -> Dict:
+    """Load progress checkpoint if it exists."""
+    try:
+        if os.path.exists(checkpoint_file):
+            with open(checkpoint_file, 'r', encoding='utf-8') as f:
+                checkpoint = json.load(f)
+            print(f"✓ Loaded checkpoint: {checkpoint['processed']}/{checkpoint['total']} terms processed")
+            return checkpoint
+    except Exception as e:
+        print(f"Error loading checkpoint: {e}")
+    return {'processed': 0, 'total': 0, 'results': []}
+
+def save_checkpoint(checkpoint: Dict, checkpoint_file: str = "progress_checkpoint.json"):
+    """Save progress checkpoint."""
+    try:
+        with open(checkpoint_file, 'w', encoding='utf-8') as f:
+            json.dump(checkpoint, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        print(f"Error saving checkpoint: {e}")
+
 
 def save_term_category_mappings(results: List[Dict], filename: str = "term_to_category_mapping.txt"):
     """
@@ -268,16 +288,33 @@ def main():
         print("No search terms found. Exiting.")
         return
     
-    results = []
+    # Load checkpoint if exists
+    checkpoint = load_checkpoint()
+    start_index = checkpoint['processed']
+    results = checkpoint['results']
     
-    # Process each search term
+    if start_index > 0:
+        print(f"Resuming from term {start_index + 1}\n")
+    
+    # Process each search term starting from checkpoint
     try:
-        for i, term in enumerate(search_terms):
+        for i in range(start_index, len(search_terms)):
+            term = search_terms[i]
             print(f"[{i + 1}/{len(search_terms)}] {term}", end=" ")
             
             # Always get a result (empty or with categories)
             result = search_term_and_get_categories(term)
             results.append(result)
+            
+            # Save checkpoint every 50 terms
+            if (i + 1) % 50 == 0:
+                checkpoint = {
+                    'processed': i + 1,
+                    'total': len(search_terms),
+                    'results': results
+                }
+                save_checkpoint(checkpoint)
+                print(f"\n  💾 Checkpoint saved: {i + 1}/{len(search_terms)} terms")
             
             # Progress indicator every 100 terms
             if (i + 1) % 100 == 0:
@@ -292,7 +329,15 @@ def main():
                 time.sleep(0.5)
     
     except KeyboardInterrupt:
-        print("\n\nInterrupted by user. Saving partial results...")
+        print("\n\nInterrupted by user. Saving checkpoint...")
+        checkpoint = {
+            'processed': i + 1,
+            'total': len(search_terms),
+            'results': results
+        }
+        save_checkpoint(checkpoint)
+        print("Checkpoint saved. Run again to resume.")
+        return
     
     # Count terms with and without categories
     terms_with_categories = sum(1 for r in results if r['c3_categories'])
@@ -318,6 +363,11 @@ def main():
         print(f"\n✓ Results saved:")
         print(f"  - term_to_category_mapping.txt ({len(results)} terms)")
         print(f"  - term_to_category_detailed.csv")
+        
+        # Clean up checkpoint file after successful completion
+        if os.path.exists("progress_checkpoint.json"):
+            os.remove("progress_checkpoint.json")
+            print(f"\n✓ Checkpoint file removed (processing complete).")
     else:
         print("\nNo results to save.")
 
