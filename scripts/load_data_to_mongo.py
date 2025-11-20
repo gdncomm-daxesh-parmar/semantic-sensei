@@ -7,6 +7,7 @@ import csv
 import sys
 import os
 from collections import defaultdict
+from datetime import datetime
 
 # Add parent directory to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -73,6 +74,7 @@ def create_combined_documents(catalog_data, model_data):
     Combine catalog and model data into MongoDB documents
     """
     documents = []
+    current_time = datetime.utcnow()
     
     # Get all unique terms
     all_terms = set(catalog_data.keys()) | set(model_data.keys())
@@ -81,11 +83,13 @@ def create_combined_documents(catalog_data, model_data):
         doc = {
             'searchTerm': term,
             'catalogCategories': catalog_data.get(term, []),
-            'modelIdentifiedCategories': model_data.get(term, [])
+            'modelIdentifiedCategories': model_data.get(term, []),
+            'createdDate': current_time,
+            'updatedDate': current_time
         }
         documents.append(doc)
     
-    print(f"✓ Created {len(documents)} combined documents")
+    print(f"✓ Created {len(documents)} combined documents with timestamps")
     return documents
 
 

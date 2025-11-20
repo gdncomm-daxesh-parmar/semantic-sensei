@@ -1,49 +1,17 @@
 import requests
 import csv
 import time
+import sys
+import os
 from typing import List, Dict
+
+# Add parent directory to path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from config.blibli_api import BLIBLI_HEADERS as HEADERS, BLIBLI_COOKIES as COOKIES
 
 # API endpoints
 BASE_URL = "https://www.blibli.com/backend/content-api/categories"
-
-# Headers to mimic browser request
-HEADERS = {
-    'accept': 'application/json, text/plain, */*',
-    'accept-language': 'en-US,en;q=0.8',
-    'cache-control': 'no-cache',
-    'priority': 'u=1, i',
-    'referer': 'https://www.blibli.com/',
-    'sec-ch-ua': '"Chromium";v="142", "Brave";v="142", "Not_A Brand";v="99"',
-    'sec-ch-ua-arch': '"arm"',
-    'sec-ch-ua-bitness': '"64"',
-    'sec-ch-ua-full-version-list': '"Chromium";v="142.0.0.0", "Brave";v="142.0.0.0", "Not_A Brand";v="99.0.0.0"',
-    'sec-ch-ua-mobile': '?0',
-    'sec-ch-ua-model': '""',
-    'sec-ch-ua-platform': '"macOS"',
-    'sec-ch-ua-platform-version': '"15.5.0"',
-    'sec-fetch-dest': 'empty',
-    'sec-fetch-mode': 'cors',
-    'sec-fetch-site': 'same-origin',
-    'sec-gpc': '1',
-    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36'
-}
-
-# Cookies from the curl command
-COOKIES = {
-    'Blibli-User-Id': 'e554ebe6-ae81-487c-bc8b-04ce88f6ba8d',
-    'Blibli-Is-Member': 'false',
-    'Blibli-Is-Remember': 'false',
-    'Blibli-Session-Id': '03d8b16c-88e8-4984-a626-4a6b1f68aeb1',
-    'Blibli-Signature': 'c257e91c7602228370423d98b4cb38dac227ab6c',
-    '_cfuvid': 'USXxJ70siGTCcQvvZWvqGG5rxU0X5.kvrGR_oUz_XGE-1763530900491-0.0.1.1-604800000',
-    'Blibli-Device-Id': 'U.10f1f12e-8944-403d-ba87-72c8556f532b',
-    'Blibli-Device-Id-Signature': 'bb2e8ea51e803d0f30cd5e29e6ef50609d3d715d',
-    '__cf_bm': 'GkGc9TE0GmXJ5gKNw5k3HD5B0oPiGLVuwzFBh89Zsd8-1763536368-1.0.1.1-mPuSEVIbvxNaxzKiLWkmrRhujjM6nDQyibVRRf4BcdRbXegfgnbQeaR4XQ.zrXJg.q1VyAQJmnTkwdUAShdZPUrUni.xLlffvD7TsVn6QJY',
-    'cf_clearance': 'gu5CrC8xqOxYQygUDGD8UzPLYCHU90VFM9oFLpJk2q8-1763536438-1.2.1.1-Ilt6YSMU7d1KR1U1F1HKEqsBk52PiK7qIxDKdGtretFmQh.jEjQFIWQeyQC5QelFe7qdD9w3pCDaB5R2JKfncIQb_PsDDcC7qDUeWMAFH_qUCatafccBYED_aojJFdz5UwyPnT.Fr1j7dhnPnoE8V5MJBkZ5UGjB0hRM0xr8szK3p_45CgN1YCAm2s8fX7T2IlCdw5DLF_sr0ziOxBXnQUqt1m0PKM4JqWWxQtoNuVatwKXpWwRBbfaCihXshpLn',
-    'Blibli-dv-token': 'JT_6qTmJHksUOthDVU_EchIfjthepHpsKHMnPC3DgCzLXs',
-    'g_state': '{"i_l":0,"i_ll":1763536449758,"i_b":"rpg+KPRnEgW2gKLFYtQpKXnA6UEJh01v6yCCUrpAGEQ"}',
-    'forterToken': 'f325fa4658344ef58e3c361eb823a0df_1763536449623_148_UDAD43b-mnts-a9_25ck_'
-}
 
 def fetch_all_c1_categories() -> List[Dict]:
     """Fetch all C1 (level 1) categories from the main API."""

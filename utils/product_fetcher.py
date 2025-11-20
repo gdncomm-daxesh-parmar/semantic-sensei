@@ -6,25 +6,43 @@ import requests
 import urllib.parse
 import traceback
 
-
-# Blibli API Configuration
+# Blibli API Configuration - UPDATE COOKIES WHEN THEY EXPIRE
 BLIBLI_HEADERS = {
     'accept': 'application/json, text/plain, */*',
     'accept-language': 'id',
     'cache-control': 'no-cache',
     'channelid': 'web',
     'content-type': 'application/json;charset=UTF-8',
-    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36'
+    'isjual': 'false',
+    'params': '[object Object]',
+    'priority': 'u=1, i',
+    'sec-ch-ua': '"Chromium";v="142", "Brave";v="142", "Not_A Brand";v="99"',
+    'sec-ch-ua-mobile': '?0',
+    'sec-ch-ua-platform': '"macOS"',
+    'sec-fetch-dest': 'empty',
+    'sec-fetch-mode': 'cors',
+    'sec-fetch-site': 'same-origin',
+    'sec-gpc': '1',
+    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
 }
 
 BLIBLI_COOKIES = {
-    'Blibli-User-Id': 'e554ebe6-ae81-487c-bc8b-04ce88f6ba8d',
+    '__cf_bm': '8aho6ZcdQ1ExvNow4g4vnl.eLXna1BGF8sH1XGsi8IY-1763631164-1.0.1.1-PpzMsVQpfMBnUWFXkBi0B_EMlWDjPkRCy6cD9wiNStqxmOpfUdauC.FnP90jFRIuyMg4phvWwfE8xZHvAPvGYMls6lv5hNC1CqFOFFUaMvs',
+    '_cfuvid': 'RXDStfrdP1O1hC5mulNoFKLPpU3l.yE1yxppjDTIE6U-1763631164097-0.0.1.1-604800000',
+    'cf_clearance': 'oFmmc6ABnqOnGoVDmBISjZ2zDtFzn1uSej3GtlUtUKw-1763631164-1.2.1.1-NJNROWv6EDWc3z1widhs.50djT2i030sL7Pj18AVgVVipfYCm0NGL89p64hOUAMMTL1.b0Ga0OIsUWRw9PapS8rY1O5St43IvuL2vKYw37Hxj6Ifc_9TiQlzARQ6P6SraE81BL5IK_4UwJP9RrWrvryF6KT0gZbSH9SiYlu.WcM.xzZGepQmeZa1J6Zex6pHC7hYL7g26nOK61Iqh49lUxxB480n3oEFUSVuC5HdlTo',
+    'Blibli-Additional-Parameter-Signature': '',
     'Blibli-Is-Member': 'false',
     'Blibli-Is-Remember': 'false',
-    'Blibli-Session-Id': '03d8b16c-88e8-4984-a626-4a6b1f68aeb1',
-    'Blibli-Signature': 'c257e91c7602228370423d98b4cb38dac227ab6c',
-    'Blibli-Device-Id': 'U.10f1f12e-8944-403d-ba87-72c8556f532b',
-    'Blibli-Device-Id-Signature': 'bb2e8ea51e803d0f30cd5e29e6ef50609d3d715d',
+    'Blibli-Device-Id': 'U.d6defa5d-064a-432f-810e-fc261b9031bb',
+    'Blibli-Device-Id-Signature': 'e6af3d9d81f758e2e4c10627d12be640ab100ec1',
+    'Blibli-Session-Id': '6813c2d4-025c-44f8-a5bf-005080178380',
+    'Blibli-Signature': 'fad9b0ad74b5485130390c55e99d4ae48a3f4f0c',
+    'Blibli-User-Id': '6813c2d4-025c-44f8-a5bf-005080178380',
+    'Blibli-Unm-Signature': '9e950b91c77790f5ed1bef5865a5d83b250ac113',
+    'Blibli-Unm-Id': '6813c2d4-025c-44f8-a5bf-005080178380',
+    'g_state': '{"i_l":0,"i_ll":1763631168030,"i_b":"AfU1mCwMbLwA7gOLlGslndgIGayca06Ke6xCntv/nLI"}',
+    'Blibli-dv-token': 'JT_wco7WAUta_-x0g4ENGRJb0ZO_GTyeEz8HjbTqsP01et',
+    'forterToken': '9ccc61559b9740d2bbab630e7f6de307_1763631167976_76_UDAD43b-mnts-a9-r8-n4_25ck_',
 }
 
 
@@ -45,7 +63,7 @@ def fetch_products(search_term, category_codes=None, page=1, limit=20, include_s
         - error_message: None if successful, error string if failed
     """
     try:
-        # Build the base URL without intent parameter
+        # Build the base URL
         url = f"https://www.blibli.com/backend/search/products?page={page}&start=0&merchantSearch=true&multiCategory=true&channelId=web&showFacet=false&isMobileBCA=false&isJual=false&firstLoad=true"
         
         # Add searchTerm only if requested (Control request includes it, Model request excludes it)
@@ -59,8 +77,16 @@ def fetch_products(search_term, category_codes=None, page=1, limit=20, include_s
             for code in category_codes:
                 url += f"&category={urllib.parse.quote(code)}"
         
+        # Add dynamic referer header based on search term
+        headers = BLIBLI_HEADERS.copy()
+        if include_search_term:
+            encoded_term = urllib.parse.quote(search_term)
+            headers['referer'] = f'https://www.blibli.com/cari/{encoded_term}'
+        else:
+            headers['referer'] = 'https://www.blibli.com/'
+        
         # Make the request
-        response = requests.get(url, headers=BLIBLI_HEADERS, cookies=BLIBLI_COOKIES, timeout=10)
+        response = requests.get(url, headers=headers, cookies=BLIBLI_COOKIES, timeout=10)
         response.raise_for_status()
         
         data = response.json()

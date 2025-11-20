@@ -8,46 +8,24 @@ from typing import List, Dict, Optional
 # API endpoint
 SEARCH_API_URL = "https://www.blibli.com/backend/search/products"
 
-# Headers for the API request
+# Headers and Cookies - UPDATE WHEN EXPIRED
 HEADERS = {
     'accept': 'application/json, text/plain, */*',
     'accept-language': 'id',
     'cache-control': 'no-cache',
-    'channelid': 'android',
+    'channelid': 'web',
     'content-type': 'application/json;charset=UTF-8',
-    'priority': 'u=1, i',
-    'referer': 'https://www.blibli.com/cari/Samsung',
-    'sec-ch-ua': '"Chromium";v="142", "Brave";v="142", "Not_A Brand";v="99"',
-    'sec-ch-ua-arch': '"arm"',
-    'sec-ch-ua-bitness': '"64"',
-    'sec-ch-ua-full-version-list': '"Chromium";v="142.0.0.0", "Brave";v="142.0.0.0", "Not_A Brand";v="99.0.0.0"',
-    'sec-ch-ua-mobile': '?0',
-    'sec-ch-ua-model': '""',
-    'sec-ch-ua-platform': '"macOS"',
-    'sec-ch-ua-platform-version': '"15.5.0"',
-    'sec-fetch-dest': 'empty',
-    'sec-fetch-mode': 'cors',
-    'sec-fetch-site': 'same-origin',
-    'sec-gpc': '1',
-    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
-    'build-no': '1111'
+    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36'
 }
 
-# Cookies
 COOKIES = {
     'Blibli-User-Id': 'e554ebe6-ae81-487c-bc8b-04ce88f6ba8d',
     'Blibli-Is-Member': 'false',
     'Blibli-Is-Remember': 'false',
     'Blibli-Session-Id': '03d8b16c-88e8-4984-a626-4a6b1f68aeb1',
     'Blibli-Signature': 'c257e91c7602228370423d98b4cb38dac227ab6c',
-    '_cfuvid': 'USXxJ70siGTCcQvvZWvqGG5rxU0X5.kvrGR_oUz_XGE-1763530900491-0.0.1.1-604800000',
     'Blibli-Device-Id': 'U.10f1f12e-8944-403d-ba87-72c8556f532b',
     'Blibli-Device-Id-Signature': 'bb2e8ea51e803d0f30cd5e29e6ef50609d3d715d',
-    '__cf_bm': 'hyb9D9kbhqWJPbFdgRwpnqzgZHEM4eSdVARyvO9C7g0-1763541864-1.0.1.1-cTP67xlZxl.TFXmR6m6cuYpsoDD5cRFp37I0R2eGGGgbQrmx.w1Yy3SmqxUFIof3xI5qyomoa8NIBr1NYAGcWN3ysN2SS.s5vnEy99eVfSc',
-    'cf_clearance': 'iNLDKHCp3vDOZ0RnYPFZMQiJl4zYnflahK8kH2MQvdE-1763541865-1.2.1.1-dzpLsfRF1UI8Vva7WMASLnyu33RSsYtFXixYSpnbaRCGDiL_HBdyIMX1GRJvmu3AeuCN08TXa5ghnpFSyS8BU1qoZYcR_LzHydCZgDTWO_eyMYtjnVoiidXpjXKqK4QyYYwk7uadCtl5Grsidi1BfVbdDxfs1XtADnI73fJODbYHUrkyoka7CzHCZAsed0Z_Kn4hplAdhFTRS..PwPkN.omliIR7su10h7eno8ka4klLq.IdZnb1MuMK0xNpYnIc',
-    'g_state': '{"i_l":0,"i_ll":1763542006197,"i_b":"bmKnsPczYkWAgPAImBrdvu40FxT6E/IryRQnSyhP4nk"}',
-    'Blibli-dv-token': 'JT__CTa1mCKccTsMfT9YQRno2-lgRRq0-2WsZy8N0lac3Y',
-    'forterToken': 'f325fa4658344ef58e3c361eb823a0df_1763542006103_146_UAS9b_25ck'
 }
 
 def extract_c3_categories(kategori_filter: Dict, top_n: int = 5) -> List[Dict]:
@@ -281,7 +259,7 @@ def main():
     print("=" * 60)
     
     # Read all search terms
-    csv_file = "/Users/daxeshparmar/PycharmProjects/semantic-sensei/data/non_performing_terms.csv"
+    csv_file = "/Users/daxeshparmar/PycharmProjects/semantic-sensei/data/non_performing_terms_test.csv"
     search_terms = read_search_terms(csv_file, limit=None)  # None = process all
     
     if not search_terms:

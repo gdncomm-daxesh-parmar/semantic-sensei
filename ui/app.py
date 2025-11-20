@@ -7,6 +7,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import sys
 import os
+from datetime import datetime
 
 # Add parent directory to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -69,7 +70,7 @@ def get_terms(skip=0, limit=10, query=""):
         filter_query = {}
     
     total = collection.count_documents(filter_query)
-    results = collection.find(filter_query).sort('searchTerm', 1).skip(skip).limit(limit)
+    results = collection.find(filter_query).sort('updatedDate', -1).skip(skip).limit(limit)
     
     return list(results), total
 
@@ -98,7 +99,10 @@ def update_boost_value(term, category_code, new_boost):
             'modelIdentifiedCategories.code': category_code
         },
         {
-            '$set': {'modelIdentifiedCategories.$.boostValue': new_boost}
+            '$set': {
+                'modelIdentifiedCategories.$.boostValue': new_boost,
+                'updatedDate': datetime.utcnow()
+            }
         }
     )
     
@@ -122,7 +126,10 @@ def add_model_category(term, category_code, category_name, boost_value):
     
     result = collection.update_one(
         {'searchTerm': term},
-        {'$push': {'modelIdentifiedCategories': new_category}}
+        {
+            '$push': {'modelIdentifiedCategories': new_category},
+            '$set': {'updatedDate': datetime.utcnow()}
+        }
     )
     
     return result.modified_count > 0
@@ -138,7 +145,10 @@ def remove_model_category(term, category_code):
     
     result = collection.update_one(
         {'searchTerm': term},
-        {'$pull': {'modelIdentifiedCategories': {'code': category_code}}}
+        {
+            '$pull': {'modelIdentifiedCategories': {'code': category_code}},
+            '$set': {'updatedDate': datetime.utcnow()}
+        }
     )
     
     return result.modified_count > 0
@@ -726,6 +736,9 @@ if st.session_state.active_page == "Category Manager":
                     <strong>🤖 AI Identified Categories</strong>
                     <div style="font-size: 0.8em; color: #666; margin-top: 2px;">Score = AI Confidence | Boost = Weight</div>
                 </div>
+                <div style="flex: 1; padding-right: 10px; text-align: center;">
+                    <strong>Last Updated</strong>
+                </div>
                 <div style="flex: 0.7; padding-right: 5px; text-align: center;">
                     <strong>Trends</strong>
                 </div>
@@ -796,7 +809,7 @@ if st.session_state.active_page == "Category Manager":
             else:
                 model_display = "—"
         
-            col1, col2, col3, col4, col5, col6 = st.columns([2, 3, 3, 0.7, 0.7, 0.7])
+            col1, col2, col3, col4, col5, col6, col7 = st.columns([2, 3, 3, 1, 0.7, 0.7, 0.7])
         
             with col1:
                 st.markdown(f"{term}")
@@ -808,14 +821,23 @@ if st.session_state.active_page == "Category Manager":
                 st.markdown(f"{model_display}", unsafe_allow_html=True)
         
             with col4:
+                # Format updatedDate
+                updated_date = term_doc.get('updatedDate')
+                if updated_date:
+                    formatted_date = updated_date.strftime('%Y-%m-%d %H:%M')
+                    st.markdown(f"<div style='text-align: center; font-size: 0.85em; color: #666;'>{formatted_date}</div>", unsafe_allow_html=True)
+                else:
+                    st.markdown("<div style='text-align: center; font-size: 0.85em; color: #999;'>—</div>", unsafe_allow_html=True)
+        
+            with col5:
                 if st.button("📈", key=f"trends_{term}_{idx}", use_container_width=True, help="Show trends"):
                     show_trends_dialog(term)
         
-            with col5:
+            with col6:
                 if st.button("✏️", key=f"edit_{term}_{idx}", use_container_width=True, help="Edit categories"):
                     edit_term_dialog(term)
         
-            with col6:
+            with col7:
                 if st.button("🗑️", key=f"delete_{term}_{idx}", use_container_width=True, help="Delete term", type="secondary"):
                     if delete_term(term):
                         st.success("✓ Deleted")
@@ -889,11 +911,11 @@ elif st.session_state.active_page == "Product Comparison":
     else:
         collection = connector.get_collection('search_term_categories')
         
-        # Get all terms that have model-identified categories
+        # Get all terms that have model-identified categories, sorted by updatedDate descending
         all_terms = list(collection.find(
             {'modelIdentifiedCategories': {'$exists': True, '$ne': []}},
             {'searchTerm': 1, 'modelIdentifiedCategories': 1}
-        ).sort('searchTerm', 1))
+        ).sort('updatedDate', -1))
         
         if not all_terms:
             st.warning("No terms with AI-identified categories found in the database")
