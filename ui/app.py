@@ -1057,7 +1057,7 @@ elif st.session_state.active_page == "Product Comparison":
                     # Vertical separator
                     with col_separator:
                         st.markdown("""
-                        <div style="width: 3px; background: linear-gradient(to bottom, #868e96, #1971c2); height: 100%; min-height: 800px; margin: 0 auto; border-radius: 2px; box-shadow: 0 0 10px rgba(0,0,0,0.1);"></div>
+                        <div style="width: 3px; background: linear-gradient(to bottom, #868e96, #1971c2); min-height: 3000px; margin: 0 auto; border-radius: 2px; box-shadow: 0 0 10px rgba(0,0,0,0.1);"></div>
                         """, unsafe_allow_html=True)
                     
                     with col_ai:
