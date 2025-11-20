@@ -13,22 +13,48 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from utils.db_connector import get_db_connection
 
 
-def generate_random_trends(num_points=10):
-    """Generate random CTR and CVR trend data"""
+def generate_random_trends(start_date=None, num_points=10, trend_type='neutral'):
+    """Generate CTR and CVR trend data with specific patterns
+    
+    Args:
+        start_date: Starting date for trends
+        num_points: Number of data points
+        trend_type: 'upward', 'downward', or 'neutral'
+    """
     ctr_data = []
     cvr_data = []
     timestamps = []
     
-    # Generate data for the last num_points days
-    base_date = datetime.now() - timedelta(days=num_points)
+    # If start_date not provided, use last num_points days from now
+    if start_date is None:
+        base_date = datetime.now() - timedelta(days=num_points)
+    else:
+        base_date = start_date
+    
+    # Starting point for CTR
+    base_ctr = random.uniform(0.15, 0.35)
     
     for i in range(num_points):
-        # Generate random CTR (0.05 to 0.8)
-        ctr = round(random.uniform(0.05, 0.8), 3)
+        # Generate CTR based on trend type
+        if trend_type == 'upward':
+            # Gradual upward trend with some noise
+            trend_component = (i / num_points) * 0.3  # Up to 30% increase
+            noise = random.uniform(-0.02, 0.05)  # Slightly positive bias
+            ctr = round(min(0.8, base_ctr + trend_component + noise), 3)
+        elif trend_type == 'downward':
+            # Gradual downward trend with some noise
+            trend_component = (i / num_points) * -0.2  # Up to 20% decrease
+            noise = random.uniform(-0.05, 0.02)  # Slightly negative bias
+            ctr = round(max(0.05, base_ctr + trend_component + noise), 3)
+        else:  # neutral
+            # Random fluctuation around base
+            noise = random.uniform(-0.1, 0.1)
+            ctr = round(max(0.05, min(0.8, base_ctr + noise)), 3)
+        
         ctr_data.append(ctr)
         
-        # Generate random CVR (0.01 to 0.5)
-        cvr = round(random.uniform(0.01, 0.5), 3)
+        # CVR follows similar pattern but with smaller values
+        cvr = round(ctr * random.uniform(0.3, 0.6), 3)
         cvr_data.append(cvr)
         
         # Add timestamp
@@ -53,8 +79,8 @@ def populate_trends():
         terms_collection = connector.get_collection('search_term_categories')
         trends_collection = connector.get_collection('search_term_trends')
         
-        # Get all search terms
-        terms = list(terms_collection.find({}, {'searchTerm': 1}))
+        # Get all search terms with their creation dates
+        terms = list(terms_collection.find({}, {'searchTerm': 1, 'createdDate': 1}))
         
         print("=" * 60)
         print("Populating CTR/CVR Trends Data")
@@ -65,21 +91,54 @@ def populate_trends():
         trends_collection.delete_many({})
         
         trends_docs = []
-        for term_doc in terms:
+        trend_types = ['upward', 'downward', 'neutral']
+        
+        for idx, term_doc in enumerate(terms):
             term = term_doc['searchTerm']
+            created_date = term_doc.get('createdDate')
             
-            # Generate random trends
-            trends = generate_random_trends(num_points=15)
+            # Distribute trend types evenly
+            trend_type = trend_types[idx % 3]
+            
+            # Calculate number of days since creation
+            if created_date:
+                days_since_creation = (datetime.now() - created_date).days
+                # Generate trends from creation date, at least 5 days
+                num_points = max(5, min(days_since_creation + 1, 30))
+                trends = generate_random_trends(start_date=created_date, num_points=num_points, trend_type=trend_type)
+            else:
+                # Default to 15 days if no creation date
+                trends = generate_random_trends(num_points=15, trend_type=trend_type)
+            
+            # Calculate the actual trend status from generated data
+            if len(trends['ctr']) >= 5:
+                recent_ctrs = trends['ctr'][-5:]
+                first_ctr = recent_ctrs[0]
+                last_ctr = recent_ctrs[-1]
+                pct_change = ((last_ctr - first_ctr) / first_ctr * 100) if first_ctr > 0 else 0
+                
+                # Determine actual status based on data
+                if pct_change < -1:
+                    calculated_status = 'underperforming'
+                elif pct_change > 1:
+                    calculated_status = 'improvement'
+                else:
+                    calculated_status = 'neutral'
+            else:
+                calculated_status = 'neutral'
             
             trends_doc = {
                 'searchTerm': term,
                 'ctr': trends['ctr'],
                 'cvr': trends['cvr'],
                 'timestamps': trends['timestamps'],
+                'trendType': calculated_status,  # Store the actual calculated trend
                 'lastUpdated': datetime.now()
             }
             
             trends_docs.append(trends_doc)
+            
+        print(f"  Generated trends: ~{len(terms)//3} upward, ~{len(terms)//3} downward, ~{len(terms)//3} neutral")
         
         # Insert all trends
         if trends_docs:
