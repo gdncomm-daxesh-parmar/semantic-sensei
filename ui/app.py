@@ -75,31 +75,35 @@ def get_terms(skip=0, limit=10, query="", status_filter="in_progress", trend_fil
     if status_filter:
         filter_query['status'] = status_filter
     
-    # Get all matching terms first
-    all_results = list(collection.find(filter_query).sort('updatedDate', -1))
-    
-    # Apply trend filter if needed
+    # Optimize: If trend filter is specified, get matching terms from trends collection first
     if trend_filter != "all":
-        filtered_results = []
-        for term_doc in all_results:
-            term = term_doc['searchTerm']
-            # Get trend type from trends collection
-            trend_data = trends_collection.find_one({'searchTerm': term})
-            
-            if trend_data:
-                stored_trend_type = trend_data.get('trendType', 'neutral')
-                
-                if trend_filter == "improvement" and stored_trend_type == "improvement":
-                    filtered_results.append(term_doc)
-                elif trend_filter == "underperforming" and stored_trend_type == "underperforming":
-                    filtered_results.append(term_doc)
-                elif trend_filter == "neutral" and stored_trend_type == "neutral":
-                    filtered_results.append(term_doc)
+        # Get all terms with the specified trend type
+        trend_query = {'trendType': trend_filter}
+        matching_trend_terms = trends_collection.find(trend_query, {'searchTerm': 1})
+        trend_term_list = [doc['searchTerm'] for doc in matching_trend_terms]
         
-        all_results = filtered_results
+        # Add to filter query
+        if trend_term_list:
+            filter_query['searchTerm'] = {'$in': trend_term_list}
+            if query:
+                # Combine with search query using $and
+                filter_query = {
+                    '$and': [
+                        {'searchTerm': {'$in': trend_term_list}},
+                        {'searchTerm': {'$regex': query, '$options': 'i'}}
+                    ]
+                }
+                if status_filter:
+                    filter_query['$and'].append({'status': status_filter})
+        else:
+            # No matching trends, return empty
+            return [], 0
     
-    total = len(all_results)
-    results = all_results[skip:skip+limit]
+    # Get total count efficiently
+    total = collection.count_documents(filter_query)
+    
+    # Get only the required page of results
+    results = list(collection.find(filter_query).sort('updatedDate', -1).skip(skip).limit(limit))
     
     return results, total
 
@@ -710,8 +714,8 @@ def show_product_comparison_dialog(term):
     </style>
     """, unsafe_allow_html=True)
     
-    # Display comparison in two columns
-    col_control, col_ai = st.columns(2)
+    # Display comparison in two columns with separator
+    col_control, col_separator, col_ai = st.columns([10, 0.5, 10])
     
     with col_control:
         st.markdown("""
@@ -724,10 +728,10 @@ def show_product_comparison_dialog(term):
         st.markdown(f"<p style='text-align: center; color: #868e96; margin: 10px 0;'><strong>{len(control_products)}</strong> products</p>", unsafe_allow_html=True)
         
         if control_products:
-            # Display products in 2-column grid within this column
-            for i in range(0, min(12, len(control_products)), 2):
-                cols = st.columns(2)
-                for j in range(2):
+            # Display all products in 3-column grid within this column
+            for i in range(0, len(control_products), 3):
+                cols = st.columns(3)
+                for j in range(3):
                     if i + j < len(control_products):
                         product = control_products[i + j]
                         with cols[j]:
@@ -747,6 +751,12 @@ def show_product_comparison_dialog(term):
         else:
             st.info("No products found")
     
+    with col_separator:
+        # Add vertical separator line
+        st.markdown("""
+        <div style="height: 100%; border-left: 3px solid #e0e0e0; margin: 0 auto;"></div>
+        """, unsafe_allow_html=True)
+    
     with col_ai:
         st.markdown("""
         <div style="background-color: #e7f5ff; padding: 15px; border-radius: 10px; border: 2px solid #1971c2;">
@@ -758,10 +768,10 @@ def show_product_comparison_dialog(term):
         st.markdown(f"<p style='text-align: center; color: #1971c2; margin: 10px 0;'><strong>{len(ai_products)}</strong> products</p>", unsafe_allow_html=True)
         
         if ai_products:
-            # Display products in 2-column grid within this column
-            for i in range(0, min(12, len(ai_products)), 2):
-                cols = st.columns(2)
-                for j in range(2):
+            # Display all products in 3-column grid within this column
+            for i in range(0, len(ai_products), 3):
+                cols = st.columns(3)
+                for j in range(3):
                     if i + j < len(ai_products):
                         product = ai_products[i + j]
                         with cols[j]:
@@ -1418,11 +1428,8 @@ if True:  # Keep existing logic structure
                 <div style="flex: 0.8; padding-right: 10px; text-align: center;">
                     <strong>Last Updated</strong>
                 </div>
-                <div style="flex: 0.6; padding-right: 5px; text-align: center;">
-                    <strong>Trends</strong>
-                </div>
-                <div style="flex: 0.6; padding-right: 5px; text-align: center;">
-                    <strong>Products</strong>
+                <div style="flex: 1.2; padding-right: 5px; text-align: center;">
+                    <strong>Actions</strong>
                 </div>
                 <div style="flex: 0.7; padding-right: 5px; text-align: center;">
                     <strong>Promote</strong>
@@ -1505,7 +1512,7 @@ if True:  # Keep existing logic structure
             else:
                 trend_badge = f'<span style="background-color: #6c757d; color: white; padding: 5px 10px; border-radius: 4px; font-size: 0.85em; font-weight: 600; white-space: nowrap; display: inline-block;">➡️ Neutral</span>'
         
-            col1, col2, col3, col4, col5, col6, col7, col8, col9, col10 = st.columns([1.5, 2.5, 2.5, 1, 0.8, 0.6, 0.6, 0.7, 0.6, 0.6])
+            col1, col2, col3, col4, col5, col6, col7, col8, col9 = st.columns([1.5, 2.5, 2.5, 1, 0.8, 1.2, 0.7, 0.6, 0.6])
         
             with col1:
                 # Show lock icon if locked
@@ -1533,14 +1540,16 @@ if True:  # Keep existing logic structure
                     st.markdown("<div style='text-align: center; font-size: 0.85em; color: #999;'>—</div>", unsafe_allow_html=True)
         
             with col6:
-                if st.button("📈", key=f"trends_{term}_{idx}", use_container_width=True, help="Show trends"):
-                    show_trends_dialog(term)
+                # Create action buttons side by side
+                btn_col1, btn_col2 = st.columns(2)
+                with btn_col1:
+                    if st.button("📈", key=f"trends_{term}_{idx}", use_container_width=True, help="Show trends"):
+                        show_trends_dialog(term)
+                with btn_col2:
+                    if st.button("🛍️", key=f"visualize_{term}_{idx}", use_container_width=True, help="Visualize diff"):
+                        show_product_comparison_dialog(term)
         
             with col7:
-                if st.button("🛍️", key=f"visualize_{term}_{idx}", use_container_width=True, help="Compare products"):
-                    show_product_comparison_dialog(term)
-        
-            with col8:
                 # Promote button - only for in_progress terms
                 status = term_doc.get('status', 'in_progress')
                 if status == "in_progress":
@@ -1553,7 +1562,7 @@ if True:  # Keep existing logic structure
                 else:
                     st.button("✓", key=f"promote_{term}_{idx}", use_container_width=True, disabled=True, help="Already in Main Algo")
         
-            with col9:
+            with col8:
                 # Disable edit for locked terms
                 status = term_doc.get('status', 'in_progress')
                 if status == "locked":
@@ -1562,7 +1571,7 @@ if True:  # Keep existing logic structure
                     if st.button("✏️", key=f"edit_{term}_{idx}", use_container_width=True, help="Edit categories"):
                         edit_term_dialog(term)
         
-            with col10:
+            with col9:
                 if st.button("🗑️", key=f"delete_{term}_{idx}", use_container_width=True, help="Delete term", type="secondary"):
                     if delete_term(term):
                         st.success("✓ Deleted")
