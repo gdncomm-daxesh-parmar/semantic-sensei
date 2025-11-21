@@ -12,7 +12,7 @@ pip install flask google-generativeai
 
 ```bash
 cd /Users/daxeshparmar/PycharmProjects/semantic-sensei
-python model/fetchDetailsFromModel.py
+python model/model_predict.py
 ```
 
 The API will start on `http://localhost:8090`

@@ -7,7 +7,30 @@ import pandas as pd
 import plotly.graph_objects as go
 import sys
 import os
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
+
+# IST timezone offset
+IST_OFFSET = timedelta(hours=5, minutes=30)
+
+def to_ist(dt):
+    """Convert UTC datetime to IST"""
+    if dt is None:
+        return None
+    if isinstance(dt, datetime):
+        # If datetime has no timezone info, assume it's UTC
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        # Convert to IST
+        ist_dt = dt.astimezone(timezone(IST_OFFSET))
+        return ist_dt.replace(tzinfo=None)
+    return dt
+
+def format_ist_datetime(dt):
+    """Format datetime in IST"""
+    if dt is None:
+        return "—"
+    ist_dt = to_ist(dt)
+    return ist_dt.strftime('%Y-%m-%d %H:%M IST'), timezone, timedelta
 
 # Add parent directory to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -24,6 +47,30 @@ st.set_page_config(
     page_icon="🧠",
     layout="wide"
 )
+
+# IST timezone offset (UTC + 5:30)
+IST_OFFSET = timedelta(hours=5, minutes=30)
+
+def utc_to_ist(dt):
+    """
+    Convert UTC datetime from database to IST
+    MongoDB stores dates in UTC, so we need to add 5:30 hours
+    """
+    if dt is None:
+        return None
+    if isinstance(dt, str):
+        try:
+            dt = datetime.fromisoformat(dt)
+        except:
+            return dt
+    if isinstance(dt, datetime):
+        # Add IST offset (5:30) to UTC time
+        return dt + IST_OFFSET
+    return dt
+
+def now_ist():
+    """Get current time in IST"""
+    return datetime.now(timezone.utc).replace(tzinfo=None) + IST_OFFSET
 
 # Initialize session state
 if 'db_connector' not in st.session_state:
@@ -127,7 +174,7 @@ def log_edit_history(term, action_type, details):
     collection = connector.get_collection('search_term_categories')
     
     edit_entry = {
-        'timestamp': datetime.utcnow(),
+        'timestamp': now_ist(),
         'action': action_type,
         'details': details
     }
@@ -166,7 +213,7 @@ def update_boost_value(term, category_code, new_boost):
         {
             '$set': {
                 'modelIdentifiedCategories.$.boostValue': new_boost,
-                'updatedDate': datetime.utcnow()
+                'updatedDate': now_ist()
             }
         }
     )
@@ -179,6 +226,39 @@ def update_boost_value(term, category_code, new_boost):
         check_and_auto_lock(term)
     
     return result.modified_count > 0
+
+
+def reclassify_term_type(term):
+    """Reclassify a term's type after categories change"""
+    connector = get_db()
+    if not connector:
+        return
+    
+    collection = connector.get_collection('search_term_categories')
+    term_data = collection.find_one({'searchTerm': term})
+    
+    if not term_data:
+        return
+    
+    # Classify based on intersection
+    catalog_codes = set(cat['code'] for cat in term_data.get('catalogCategories', []) if 'code' in cat)
+    model_codes = set(cat['code'] for cat in term_data.get('modelIdentifiedCategories', []) if 'code' in cat)
+    intersection = catalog_codes & model_codes
+    
+    term_type = 'boostingConfiguration' if intersection else 'filterConfiguration'
+    
+    # Update if changed
+    current_type = term_data.get('termType')
+    if current_type != term_type:
+        collection.update_one(
+            {'searchTerm': term},
+            {
+                '$set': {
+                    'termType': term_type,
+                    'termTypeClassifiedDate': now_ist()
+                }
+            }
+        )
 
 
 def add_model_category(term, category_code, category_name, boost_value):
@@ -200,7 +280,7 @@ def add_model_category(term, category_code, category_name, boost_value):
         {'searchTerm': term},
         {
             '$push': {'modelIdentifiedCategories': new_category},
-            '$set': {'updatedDate': datetime.utcnow()}
+            '$set': {'updatedDate': now_ist()}
         }
     )
     
@@ -208,6 +288,8 @@ def add_model_category(term, category_code, category_name, boost_value):
         # Log the edit
         log_edit_history(term, 'category_added', 
                         f"Added category '{category_name}' (boost: {boost_value})")
+        # Reclassify term type
+        reclassify_term_type(term)
         # Check if term should be auto-locked
         check_and_auto_lock(term)
     
@@ -234,7 +316,7 @@ def remove_model_category(term, category_code):
         {'searchTerm': term},
         {
             '$pull': {'modelIdentifiedCategories': {'code': category_code}},
-            '$set': {'updatedDate': datetime.utcnow()}
+            '$set': {'updatedDate': now_ist()}
         }
     )
     
@@ -242,6 +324,8 @@ def remove_model_category(term, category_code):
         # Log the edit
         log_edit_history(term, 'category_removed', 
                         f"Removed category '{category_name}'")
+        # Reclassify term type
+        reclassify_term_type(term)
         # Check if term should be auto-locked
         check_and_auto_lock(term)
     
@@ -275,7 +359,7 @@ def promote_to_main_algo(term):
         {
             '$set': {
                 'status': 'locked',
-                'updatedDate': datetime.utcnow()
+                'updatedDate': now_ist()
             }
         }
     )
@@ -382,6 +466,7 @@ def save_live_entry(search_term, catalog_categories, model_categories):
         return False, "Database connection failed"
     
     collection = connector.get_collection('search_term_categories')
+    trends_collection = connector.get_collection('search_term_trends')
     
     # Check if term already exists
     existing = collection.find_one({'searchTerm': search_term})
@@ -389,25 +474,52 @@ def save_live_entry(search_term, catalog_categories, model_categories):
     if existing:
         return False, f"Term '{search_term}' already exists in database"
     
+    # Classify term type based on catalog vs model intersection
+    catalog_codes = set(cat['code'] for cat in catalog_categories if 'code' in cat)
+    model_codes = set(cat['code'] for cat in model_categories if 'code' in cat)
+    intersection = catalog_codes & model_codes
+    
+    term_type = 'boostingConfiguration' if intersection else 'filterConfiguration'
+    
+    # Use IST time
+    current_time = now_ist()
+    
     # Create new entry
     entry_data = {
         'searchTerm': search_term,
         'catalogCategories': catalog_categories,
         'modelIdentifiedCategories': model_categories,
+        'termType': term_type,
+        'termTypeClassifiedDate': current_time,
         'status': 'in_progress',
-        'createdDate': datetime.utcnow(),
-        'updatedDate': datetime.utcnow(),
+        'createdDate': current_time,
+        'updatedDate': current_time,
         'editHistory': [
             {
-                'timestamp': datetime.utcnow(),
+                'timestamp': current_time,
                 'action': 'created',
-                'details': 'Live entry generated from UI'
+                'details': f'Live entry generated from UI (Type: {term_type})'
             }
         ]
     }
     
+    # Create simple trends data (just initial values)
+    import random
+    initial_ctr = round(random.uniform(0.15, 0.35), 3)
+    initial_cvr = round(initial_ctr * random.uniform(0.3, 0.6), 3)
+    
+    trends_data = {
+        'searchTerm': search_term,
+        'ctr': [initial_ctr],
+        'cvr': [initial_cvr],
+        'timestamps': [current_time.strftime('%Y-%m-%d')],
+        'trendType': 'neutral',
+        'lastUpdated': current_time
+    }
+    
     try:
         collection.insert_one(entry_data)
+        trends_collection.insert_one(trends_data)
         return True, "Entry saved successfully"
     except Exception as e:
         return False, str(e)
@@ -496,7 +608,7 @@ def check_and_auto_lock(term):
             {
                 '$set': {
                     'status': 'locked',
-                    'updatedDate': datetime.utcnow()
+                    'updatedDate': now_ist()
                 }
             }
         )
@@ -529,17 +641,36 @@ def show_live_entry_generator():
     This tool will:
     1. 📚 Fetch catalog categories from Blibli API
     2. 🤖 Get AI predictions from the model
-    3. 💾 Save the entry to MongoDB
+    3. ✏️ Edit categories and boost values
+    4. 💾 Save the entry to MongoDB
     """)
+    
+    # Initialize session state for live entry
+    if 'live_entry_data' not in st.session_state:
+        st.session_state.live_entry_data = {
+            'search_term': '',
+            'catalog_categories': [],
+            'model_categories': [],
+            'fetched': False
+        }
+    
+    # Load C3 categories for dropdown
+    if st.session_state.c3_categories is None:
+        st.session_state.c3_categories = load_c3_categories()
+    c3_categories = st.session_state.c3_categories
     
     # Input for search term
     search_term = st.text_input(
         "Enter Search Term",
         placeholder="e.g., apple iphone, nike shoes, samsung tv",
-        key="live_entry_search_term"
+        key="live_entry_search_term",
+        on_change=None
     )
     
-    if st.button("🔍 Generate Predictions", type="primary", use_container_width=True):
+    # Check if Enter was pressed or button clicked
+    generate_clicked = st.button("🔍 Generate Predictions", type="primary", use_container_width=True)
+    
+    if generate_clicked or (search_term and search_term != st.session_state.get('last_search_term', '')):
         if not search_term or len(search_term.strip()) == 0:
             st.error("Please enter a search term")
             return
@@ -555,7 +686,7 @@ def show_live_entry_generator():
             st.error(f"❌ Catalog API Error: {catalog_error}")
         elif catalog_categories:
             st.success(f"✅ Found {len(catalog_categories)} catalog categories")
-            with st.expander("📚 Catalog Categories", expanded=True):
+            with st.expander("📚 Catalog Categories", expanded=False):
                 for cat in catalog_categories:
                     st.markdown(f"• **{cat['name']}** `{cat['code']}`")
         else:
@@ -571,47 +702,153 @@ def show_live_entry_generator():
             st.info("💡 Make sure the model API is running: `python model/fetchDetailsFromModel.py`")
         elif model_categories:
             st.success(f"✅ Model predicted {len(model_categories)} categories")
-            
-            # Show model predictions
-            with st.expander("🤖 AI Model Predictions", expanded=True):
-                for cat in model_categories:
-                    score = cat['score']
-                    # Color coding
-                    if score >= 80:
-                        color = "#28a745"
-                    elif score >= 50:
-                        color = "#ffc107"
-                    else:
-                        color = "#fd7e14"
-                    
-                    st.markdown(
-                        f"• **{cat['name']}** `{cat['code']}` - "
-                        f"<span style='background-color: {color}; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.85em;'>Score: {score}</span>",
-                        unsafe_allow_html=True
-                    )
         else:
             st.warning("⚠️ No model predictions received")
         
-        # Step 3: Save to MongoDB
-        if catalog_categories or model_categories:
-            st.markdown("### Step 3: Save to Database")
+        # Store data in session state
+        st.session_state.live_entry_data = {
+            'search_term': search_term,
+            'catalog_categories': catalog_categories if catalog_categories else [],
+            'model_categories': model_categories if model_categories else [],
+            'fetched': True
+        }
+        st.session_state.last_search_term = search_term
+    
+    # Step 3: Edit Categories (shown if data is fetched)
+    if st.session_state.live_entry_data['fetched']:
+        st.markdown("---")
+        st.markdown("### Step 3: Edit AI Categories")
+        
+        data = st.session_state.live_entry_data
+        
+        # Edit existing categories
+        if data['model_categories']:
+            st.markdown("**✏️ Edit Boost Values & Remove Categories:**")
+            categories_to_remove = []
+            updated_categories = []
             
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                st.info(f"**Search Term:** {search_term}")
-                st.write(f"📚 Catalog Categories: {len(catalog_categories)}")
-                st.write(f"🤖 Model Categories: {len(model_categories)}")
-            
-            with col2:
-                if st.button("💾 Save Entry", type="primary", use_container_width=True):
-                    success, message = save_live_entry(search_term, catalog_categories, model_categories)
-                    
-                    if success:
-                        st.success(f"✅ {message}")
-                        st.balloons()
-                        st.info("Entry saved! Refresh the main page to see it.")
+            for idx, cat in enumerate(data['model_categories']):
+                col1, col2, col3, col4 = st.columns([3, 1, 1.5, 0.8])
+                
+                with col1:
+                    score = cat['score']
+                    if score == 0:
+                        # Manual entry - show MANUAL badge instead of score
+                        st.markdown(
+                            f"**{cat['name']}** `{cat['code']}` - "
+                            f"<span style='background-color: #6c757d; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.75em;'>✋ MANUAL</span>",
+                            unsafe_allow_html=True
+                        )
                     else:
-                        st.error(f"❌ {message}")
+                        # AI prediction - show score
+                        if score >= 80:
+                            color = "#28a745"
+                        elif score >= 50:
+                            color = "#ffc107"
+                        else:
+                            color = "#fd7e14"
+                        st.markdown(
+                            f"**{cat['name']}** `{cat['code']}` - "
+                            f"<span style='background-color: {color}; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.75em;'>Score: {score}</span>",
+                            unsafe_allow_html=True
+                        )
+                
+                with col2:
+                    st.markdown(f"<div style='padding-top: 8px;'>Boost:</div>", unsafe_allow_html=True)
+                
+                with col3:
+                    new_boost = st.number_input(
+                        "Boost",
+                        min_value=0,
+                        value=cat.get('boostValue', 100),
+                        step=10,
+                        key=f"live_boost_{idx}",
+                        label_visibility="collapsed"
+                    )
+                    cat['boostValue'] = new_boost
+                
+                with col4:
+                    if st.button("🗑️", key=f"live_remove_{idx}", help="Remove category"):
+                        categories_to_remove.append(idx)
+                
+                updated_categories.append(cat)
+            
+            # Remove categories marked for deletion
+            if categories_to_remove:
+                updated_categories = [cat for i, cat in enumerate(updated_categories) if i not in categories_to_remove]
+            
+            data['model_categories'] = updated_categories
+        
+        # Add new category
+        st.markdown("**➕ Add New Category:**")
+        col1, col2, col3 = st.columns([3, 1.5, 0.8])
+        
+        with col1:
+            category_options = [""] + [f"{code} - {name}" for code, name in sorted(c3_categories.items(), key=lambda x: x[1])]
+            selected_category = st.selectbox(
+                "Select Category",
+                options=category_options,
+                key="live_add_category",
+                label_visibility="collapsed"
+            )
+        
+        with col2:
+            add_boost = st.number_input("Boost", min_value=0, value=100, step=10, key="live_add_boost", label_visibility="collapsed")
+        
+        with col3:
+            if st.button("➕ Add", key="live_add_btn", use_container_width=True):
+                if selected_category:
+                    selected_code = selected_category.split(" - ")[0]
+                    selected_name = c3_categories[selected_code]
+                    
+                    # Check if already exists
+                    existing_codes = [cat['code'] for cat in data['model_categories']]
+                    if selected_code not in existing_codes:
+                        data['model_categories'].append({
+                            'code': selected_code,
+                            'name': selected_name,
+                            'score': 0,  # Manual entry
+                            'boostValue': add_boost
+                        })
+                        # Update session state without closing dialog
+                        st.session_state.live_entry_data = data
+                        st.success(f"✅ Added {selected_name}")
+                        # Use st.rerun() to refresh but keep dialog open
+                    else:
+                        st.warning("⚠️ Category already exists")
+        
+        # Step 4: Save to MongoDB
+        st.markdown("---")
+        st.markdown("### Step 4: Save to Database")
+        
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.info(f"**Search Term:** {data['search_term']}")
+            st.write(f"📚 Catalog Categories: {len(data['catalog_categories'])}")
+            st.write(f"🤖 Model Categories: {len(data['model_categories'])}")
+        
+        with col2:
+            if st.button("💾 Save Entry", type="primary", use_container_width=True, key="save_entry_btn"):
+                success, message = save_live_entry(
+                    data['search_term'], 
+                    data['catalog_categories'], 
+                    data['model_categories']
+                )
+                
+                if success:
+                    st.success(f"✅ {message}")
+                    st.balloons()
+                    # Clear session state
+                    st.session_state.live_entry_data = {
+                        'search_term': '',
+                        'catalog_categories': [],
+                        'model_categories': [],
+                        'fetched': False
+                    }
+                    # Close dialog and refresh
+                    st.rerun()
+                else:
+                    st.error(f"❌ {message}")
 
 
 @st.dialog("Product Comparison", width="large")
@@ -648,13 +885,19 @@ def show_product_comparison_dialog(term):
             st.markdown(f"• **{cat['name']}** `{cat['code']}` - Score: {score} | Boost: {boost}")
         st.markdown("<div style='margin: 15px 0;'></div>", unsafe_allow_html=True)
     
+    # Determine term type for AI category request
+    term_type = term_data.get('termType', 'filterConfiguration')
+    
     # Fetch products for both scenarios
     with st.spinner("🔄 Fetching products..."):
         # Control: With searchTerm, no category filter
         control_products, control_error = fetch_products(term, category_codes=None, limit=40, include_search_term=True)
         
-        # AI Categories: Without searchTerm, only category filters
-        ai_products, ai_error = fetch_products(term, category_codes=category_codes, limit=40, include_search_term=False)
+        # AI Categories: Behavior depends on termType
+        # - boostingConfiguration: Include searchTerm with category filters (boost existing results)
+        # - filterConfiguration: Only category filters, no searchTerm (pure category filtering)
+        include_search_term_in_ai = (term_type == 'boostingConfiguration')
+        ai_products, ai_error = fetch_products(term, category_codes=category_codes, limit=40, include_search_term=include_search_term_in_ai)
     
     # Display any errors
     if control_error:
@@ -883,8 +1126,27 @@ def show_trends_dialog(term):
                 edit_markers_y.append(ctr[idx])
                 edit_labels.append(f"{action_icon} {action}")
     
-    # Add edit markers as scatter points
+    # Add edit markers as scatter points with detailed hover
     if edit_markers_x:
+        # Create detailed hover text for each edit
+        hover_texts = []
+        for edit in edit_history:
+            edit_time = edit.get('timestamp')
+            if edit_time:
+                if isinstance(edit_time, datetime):
+                    ist_time = utc_to_ist(edit_time)
+                    edit_time_str = ist_time.strftime('%Y-%m-%d')
+                    edit_time_display = ist_time.strftime('%Y-%m-%d %H:%M IST')
+                else:
+                    edit_time_str = str(edit_time)
+                    edit_time_display = str(edit_time)
+                
+                if edit_time_str in timestamps:
+                    action = edit.get('action', 'Edit')
+                    details = edit.get('details', 'No details')
+                    hover_text = f"<b>{action}</b><br>{details}<br>Date: {edit_time_display}"
+                    hover_texts.append(hover_text)
+        
         fig.add_trace(go.Scatter(
             x=edit_markers_x,
             y=edit_markers_y,
@@ -899,7 +1161,8 @@ def show_trends_dialog(term):
             text=edit_labels,
             textposition='top center',
             textfont=dict(size=10, color='#ff6b35', family='Arial Black'),
-            hovertemplate='<b>%{text}</b><br>Date: %{x}<extra></extra>',
+            hovertext=hover_texts,
+            hovertemplate='%{hovertext}<extra></extra>',
             showlegend=True
         ))
     
@@ -910,7 +1173,7 @@ def show_trends_dialog(term):
             font=dict(size=20, color='#212529')
         ),
         xaxis=dict(
-            title='Date',
+            title='Date (IST)',
             showgrid=True,
             gridcolor='#e0e0e0'
         ),
@@ -937,18 +1200,19 @@ def show_trends_dialog(term):
     
     # Show edit history below the chart
     if edit_history:
-        st.subheader("📝 Edit History")
+        st.subheader("📝 Edit History (IST)")
         for edit in reversed(edit_history):  # Most recent first
             timestamp = edit.get('timestamp', 'Unknown')
             action = edit.get('action', 'Unknown')
             details = edit.get('details', 'No details')
             
             if isinstance(timestamp, datetime):
-                timestamp_str = timestamp.strftime('%Y-%m-%d %H:%M')
+                ist_timestamp = utc_to_ist(timestamp)
+                timestamp_str = ist_timestamp.strftime('%Y-%m-%d %H:%M IST')
             else:
                 timestamp_str = str(timestamp)
             
-            st.markdown(f"**{timestamp_str}** - *{action}*: {details}")
+            st.markdown(f"**{timestamp_str} IST** - *{action}*: {details}")
     
     # Show statistics
     col1, col2, col3, col4 = st.columns(4)
@@ -1487,12 +1751,15 @@ if True:  # Keep existing logic structure
                 else:
                     boost_color = "#6c757d"  # Gray for default
             
-                # Add MANUAL badge for manually added categories (score = 0)
-                manual_badge = ""
+                # Build badges based on whether it's manual or AI
                 if score == 0:
-                    manual_badge = '<span title="Manually Added Category" style="background-color: #6c757d; color: white; padding: 1px 4px; border-radius: 2px; font-size: 0.75em; font-weight: 600; margin-left: 3px;">✋ MANUAL</span>'
+                    # Manual entry - only show MANUAL badge and Boost
+                    badges_html = f'<span title="Manually Added Category" style="background-color: #6c757d; color: white; padding: 1px 4px; border-radius: 2px; font-size: 0.75em; font-weight: 600;">✋ MANUAL</span><span title="Boost Weight Value" style="background-color: {boost_color}; color: white; padding: 1px 4px; border-radius: 2px; font-size: 0.75em; margin-left: 3px; font-weight: 600;">Boost: {boost}</span>'
+                else:
+                    # AI prediction - show Score and Boost
+                    badges_html = f'<span title="AI Confidence Score" style="background-color: {score_color}; color: white; padding: 1px 4px; border-radius: 2px; font-size: 0.75em; font-weight: 600;">Score: {score}</span><span title="Boost Weight Value" style="background-color: {boost_color}; color: white; padding: 1px 4px; border-radius: 2px; font-size: 0.75em; margin-left: 3px; font-weight: 600;">Boost: {boost}</span>'
             
-                cat_html = f'<div style="display: inline-block; margin: 1px 0; padding: 3px 6px; background-color: #f8f9fa; border-radius: 3px; border-left: 2px solid {score_color};"><span style="font-weight: 500; color: #212529; font-size: 0.9em;">{cat["name"]}</span><span style="margin-left: 6px;"><span title="AI Confidence Score" style="background-color: {score_color}; color: white; padding: 1px 4px; border-radius: 2px; font-size: 0.75em; font-weight: 600;">Score: {score}</span><span title="Boost Weight Value" style="background-color: {boost_color}; color: white; padding: 1px 4px; border-radius: 2px; font-size: 0.75em; margin-left: 3px; font-weight: 600;">Boost: {boost}</span>{manual_badge}</span></div>'
+                cat_html = f'<div style="display: inline-block; margin: 1px 0; padding: 3px 6px; background-color: #f8f9fa; border-radius: 3px; border-left: 2px solid {score_color};"><span style="font-weight: 500; color: #212529; font-size: 0.9em;">{cat["name"]}</span><span style="margin-left: 6px;">{badges_html}</span></div>'
             
                 model_parts.append(cat_html)
         
@@ -1531,10 +1798,11 @@ if True:  # Keep existing logic structure
                 st.markdown(f"<div style='text-align: center;'>{trend_badge}</div>", unsafe_allow_html=True)
         
             with col5:
-                # Format updatedDate
+                # Format updatedDate in IST
                 updated_date = term_doc.get('updatedDate')
                 if updated_date:
-                    formatted_date = updated_date.strftime('%Y-%m-%d %H:%M')
+                    ist_date = utc_to_ist(updated_date)
+                    formatted_date = ist_date.strftime('%Y-%m-%d %H:%M IST')
                     st.markdown(f"<div style='text-align: center; font-size: 0.85em; color: #666;'>{formatted_date}</div>", unsafe_allow_html=True)
                 else:
                     st.markdown("<div style='text-align: center; font-size: 0.85em; color: #999;'>—</div>", unsafe_allow_html=True)
