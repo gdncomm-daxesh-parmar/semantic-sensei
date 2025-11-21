@@ -870,7 +870,7 @@ def show_product_comparison_dialog(term):
         st.session_state.comparison_term = term
     
     # Environment selector - always shown
-    col_env1, col_env2, col_env3 = st.columns([2, 2, 2])
+    col_env1, col_env2 = st.columns([3, 1])
     with col_env1:
         environment = st.selectbox(
             "🌍 Select Environment",
@@ -882,14 +882,16 @@ def show_product_comparison_dialog(term):
         st.session_state.comparison_environment = environment
     
     with col_env2:
-        # Fetch/Refresh button
-        if st.button("🔄 Fetch Products", type="primary", use_container_width=True, key=f"fetch_products_{term}"):
+        # Add spacing to align button with selectbox
+        st.markdown("<div style='margin-top: 26px;'></div>", unsafe_allow_html=True)
+        # Visualize button
+        if st.button("📊 Visualize", type="primary", use_container_width=True, key=f"fetch_products_{term}"):
             st.session_state.comparison_fetched = True
-            st.rerun()
+            # Don't rerun - just continue to show results
     
     # Only proceed if user clicked fetch
     if not st.session_state.comparison_fetched:
-        st.info("👆 Select an environment and click 'Fetch Products' to compare results")
+        st.info("👆 Select an environment and click 'Visualize' to compare results")
         return
     
     # Get term data from database

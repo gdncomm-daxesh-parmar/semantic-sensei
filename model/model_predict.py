@@ -3,11 +3,12 @@ import requests
 import json
 import pandas as pd
 import os
+import sys
 
 app = Flask(__name__)
 
 # --- Configuration ---
-GEMINI_API_KEY = "AIzaSyC1r51DFK3X2glPw2w6lvk43FNdRsWm8jo"
+GEMINI_API_KEY = "AIzaSyAOqgahNCtAQa05ToCC1cgP7-rYWcrY_Fw"
 API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent"
 
 # Get the absolute path to c3_categories.csv
@@ -38,7 +39,7 @@ def load_categories(file_path):
 CATEGORIES_LIST_FULL, CATEGORY_NAME_TO_CODE = load_categories(CATEGORIES_FILE)
 
 # --- System Prompt ---
-SYSTEM_PROMPT = f"""
+SYSTEM_PROMPT = """
 You are an expert product-category classifier for an Indonesian e-commerce search engine.
 
 # CLASSIFICATION MODEL AND CONTEXT
@@ -72,18 +73,18 @@ OUTPUT RULES:
 - Only include predictions with score > 30.
 
 JSON structure to return:
-{{
+{
     "predictions": [
-        {{
+        {
             "term": "<search_term>",
             "uncertain": <true|false>,
             "predictions": [
-                {{"category": "<category_name>", "score": <int>}},
-                {{"category": "<category_name>", "score": <int>}}
+                {"category": "<category_name>", "score": <int>},
+                {"category": "<category_name>", "score": <int>}
             ]
-        }}
+        }
     ]
-}}
+}
 """
 
 # --- API Call Function ---
@@ -117,6 +118,15 @@ Now classify the following search term (produce only JSON):
     
     try:
         response = requests.post(full_url, headers=headers, json=payload, timeout=30)
+        
+        # Print raw response for debugging
+        print(f"\n{'='*70}", file=sys.stderr, flush=True)
+        print(f"API Request URL: {API_URL}", file=sys.stderr, flush=True)
+        print(f"Status Code: {response.status_code}", file=sys.stderr, flush=True)
+        print(f"Response Headers: {dict(response.headers)}", file=sys.stderr, flush=True)
+        print(f"Response Body: {response.text[:1000]}", file=sys.stderr, flush=True)  # Print first 1000 chars
+        print(f"{'='*70}\n", file=sys.stderr, flush=True)
+        
         response.raise_for_status()
         
         result = response.json()
@@ -163,10 +173,30 @@ Now classify the following search term (produce only JSON):
         return parsed_result, token_details
         
     except requests.exceptions.RequestException as err:
+        print(f"\n{'='*70}", file=sys.stderr, flush=True)
+        print(f"REQUEST EXCEPTION ERROR:", file=sys.stderr, flush=True)
+        print(f"Error Type: {type(err).__name__}", file=sys.stderr, flush=True)
+        print(f"Error Message: {str(err)}", file=sys.stderr, flush=True)
+        if hasattr(err, 'response') and err.response is not None:
+            print(f"Response Status: {err.response.status_code}", file=sys.stderr, flush=True)
+            print(f"Response Body: {err.response.text}", file=sys.stderr, flush=True)
+        print(f"{'='*70}\n", file=sys.stderr, flush=True)
         raise Exception(f"API Request Error: {err}")
     except json.JSONDecodeError as e:
+        print(f"\n{'='*70}", file=sys.stderr, flush=True)
+        print(f"JSON DECODE ERROR:", file=sys.stderr, flush=True)
+        print(f"Error: {str(e)}", file=sys.stderr, flush=True)
+        print(f"Generated Text: {generated_text if 'generated_text' in locals() else 'N/A'}", file=sys.stderr, flush=True)
+        print(f"{'='*70}\n", file=sys.stderr, flush=True)
         raise Exception(f"Error parsing JSON response: {e}")
     except Exception as e:
+        print(f"\n{'='*70}", file=sys.stderr, flush=True)
+        print(f"GENERAL ERROR:", file=sys.stderr, flush=True)
+        print(f"Error Type: {type(e).__name__}", file=sys.stderr, flush=True)
+        print(f"Error Message: {str(e)}", file=sys.stderr, flush=True)
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}", file=sys.stderr, flush=True)
+        print(f"{'='*70}\n", file=sys.stderr, flush=True)
         raise Exception(f"Error processing response: {e}")
 
 

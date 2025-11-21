@@ -5,5 +5,93 @@ Categories loaded: 1158 categories
 [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
  * Running on all addresses (0.0.0.0)
  * Running on http://127.0.0.1:8090
- * Running on http://192.168.1.7:8090
+ * Running on http://10.20.2.173:8090
 [33mPress CTRL+C to quit[0m
+
+======================================================================
+API Request URL: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent
+Status Code: 200
+Response Headers: {'Content-Type': 'application/json; charset=UTF-8', 'Vary': 'Origin, X-Origin, Referer', 'Content-Encoding': 'gzip', 'Date': 'Fri, 21 Nov 2025 05:03:15 GMT', 'Server': 'scaffolding on HTTPServer2', 'X-XSS-Protection': '0', 'X-Frame-Options': 'SAMEORIGIN', 'X-Content-Type-Options': 'nosniff', 'Server-Timing': 'gfet4t7; dur=3267', 'Alt-Svc': 'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000', 'Transfer-Encoding': 'chunked'}
+Response Body: {
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "{\n    \"predictions\": [\n        {\n            \"term\": \"eser\",\n            \"uncertain\": false,\n            \"predictions\": [\n                {\n                    \"category\": \"Parfum Wanita\",\n                    \"score\": 95\n                },\n                {\n                    \"category\": \"Parfum Pria\",\n                    \"score\": 90\n                },\n                {\n                    \"category\": \"Paket Parfum\",\n                    \"score\": 80\n                }\n            ]\n        }\n    ]\n}"
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "index": 0
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 6236,
+    "candidatesTokenCount": 115,
+    "totalTokenCount": 6688,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 6236
+      }
+    ],
+    "thoughtsTo
+======================================================================
+
+127.0.0.1 - - [21/Nov/2025 10:33:15] "POST /search HTTP/1.1" 200 -
+
+======================================================================
+API Request URL: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent
+Status Code: 200
+Response Headers: {'Content-Type': 'application/json; charset=UTF-8', 'Vary': 'Origin, X-Origin, Referer', 'Content-Encoding': 'gzip', 'Date': 'Fri, 21 Nov 2025 05:15:31 GMT', 'Server': 'scaffolding on HTTPServer2', 'X-XSS-Protection': '0', 'X-Frame-Options': 'SAMEORIGIN', 'X-Content-Type-Options': 'nosniff', 'Server-Timing': 'gfet4t7; dur=3455', 'Alt-Svc': 'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000', 'Transfer-Encoding': 'chunked'}
+Response Body: {
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "{\n    \"predictions\": [\n        {\n            \"term\": \"eser\",\n            \"uncertain\": false,\n            \"predictions\": [\n                {\n                    \"category\": \"Parfum Wanita\",\n                    \"score\": 95\n                },\n                {\n                    \"category\": \"Parfum Pria\",\n                    \"score\": 95\n                },\n                {\n                    \"category\": \"Paket Parfum\",\n                    \"score\": 85\n                },\n                {\n                    \"category\": \"Perawatan Tubuh\",\n                    \"score\": 40\n                }\n            ]\n        }\n    ]\n}"
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "index": 0
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 6236,
+    "candidatesTokenCount": 140,
+    "totalTokenCount"
+======================================================================
+
+127.0.0.1 - - [21/Nov/2025 10:45:31] "POST /search HTTP/1.1" 200 -
+
+======================================================================
+API Request URL: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent
+Status Code: 200
+Response Headers: {'Content-Type': 'application/json; charset=UTF-8', 'Vary': 'Origin, X-Origin, Referer', 'Content-Encoding': 'gzip', 'Date': 'Fri, 21 Nov 2025 05:15:35 GMT', 'Server': 'scaffolding on HTTPServer2', 'X-XSS-Protection': '0', 'X-Frame-Options': 'SAMEORIGIN', 'X-Content-Type-Options': 'nosniff', 'Server-Timing': 'gfet4t7; dur=3979', 'Alt-Svc': 'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000', 'Transfer-Encoding': 'chunked'}
+Response Body: {
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "{\n    \"predictions\": [\n        {\n            \"term\": \"eser\",\n            \"uncertain\": false,\n            \"predictions\": [\n                {\n                    \"category\": \"Parfum Wanita\",\n                    \"score\": 95\n                },\n                {\n                    \"category\": \"Parfum Pria\",\n                    \"score\": 90\n                },\n                {\n                    \"category\": \"Paket Parfum\",\n                    \"score\": 80\n                },\n                {\n                    \"category\": \"Perawatan Tubuh\",\n                    \"score\": 40\n                }\n            ]\n        }\n    ]\n}"
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "index": 0
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 6236,
+    "candidatesTokenCount": 140,
+    "totalTokenCount"
+======================================================================
+
+127.0.0.1 - - [21/Nov/2025 10:45:35] "POST /search HTTP/1.1" 200 -
