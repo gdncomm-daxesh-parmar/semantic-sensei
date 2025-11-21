@@ -46,9 +46,9 @@ BLIBLI_COOKIES = {
 }
 
 
-def fetch_products(search_term, category_codes=None, page=1, limit=20, include_search_term=True):
+def fetch_products(search_term, category_codes=None, page=1, limit=20, include_search_term=True, environment="production", boost_param=None):
     """
-    Fetch products from Blibli API
+    Fetch products from Blibli API or Lower Env API
     
     Args:
         search_term: The search query
@@ -56,6 +56,8 @@ def fetch_products(search_term, category_codes=None, page=1, limit=20, include_s
         page: Page number (default 1)
         limit: Number of results per page (default 20)
         include_search_term: Whether to include searchTerm in request (default True)
+        environment: "production" or "lowerEnv" (default "production")
+        boost_param: Boost parameter string for lowerEnv (e.g., "c1:100,c2:101")
     
     Returns:
         Tuple of (products_list, error_message)
@@ -63,8 +65,13 @@ def fetch_products(search_term, category_codes=None, page=1, limit=20, include_s
         - error_message: None if successful, error string if failed
     """
     try:
-        # Build the base URL
-        url = f"https://www.blibli.com/backend/search/products?page={page}&start=0&merchantSearch=true&multiCategory=true&channelId=web&showFacet=false&isMobileBCA=false&isJual=false&firstLoad=true"
+        # Choose base URL based on environment
+        if environment == "lowerEnv":
+            # Lower Env API endpoint
+            url = f"http://localhost:9090/backend/search/products?page={page}&start=0&merchantSearch=true&multiCategory=true&channelId=web&showFacet=false&isMobileBCA=false&isJual=false&firstLoad=true"
+        else:
+            # Production Blibli API
+            url = f"https://www.blibli.com/backend/search/products?page={page}&start=0&merchantSearch=true&multiCategory=true&channelId=web&showFacet=false&isMobileBCA=false&isJual=false&firstLoad=true"
         
         # Add searchTerm only if requested (Control request includes it, Model request excludes it)
         if include_search_term:
@@ -77,16 +84,30 @@ def fetch_products(search_term, category_codes=None, page=1, limit=20, include_s
             for code in category_codes:
                 url += f"&category={urllib.parse.quote(code)}"
         
+        # Add boost parameter for lowerEnv
+        if environment == "lowerEnv" and boost_param:
+            encoded_boost = urllib.parse.quote(boost_param)
+            url += f"&boostParam={encoded_boost}"
+        
         # Add dynamic referer header based on search term
         headers = BLIBLI_HEADERS.copy()
         if include_search_term:
             encoded_term = urllib.parse.quote(search_term)
-            headers['referer'] = f'https://www.blibli.com/cari/{encoded_term}'
+            if environment == "lowerEnv":
+                headers['referer'] = f'http://localhost:9090/backend/cari/{encoded_term}'
+            else:
+                headers['referer'] = f'https://www.blibli.com/cari/{encoded_term}'
         else:
-            headers['referer'] = 'https://www.blibli.com/'
+            if environment == "lowerEnv":
+                headers['referer'] = 'http://localhost:9090/backend/'
+            else:
+                headers['referer'] = 'https://www.blibli.com/'
         
-        # Make the request
-        response = requests.get(url, headers=headers, cookies=BLIBLI_COOKIES, timeout=10)
+        # Make the request (no cookies for lowerEnv)
+        if environment == "lowerEnv":
+            response = requests.get(url, headers=headers, timeout=10)
+        else:
+            response = requests.get(url, headers=headers, cookies=BLIBLI_COOKIES, timeout=10)
         response.raise_for_status()
         
         data = response.json()

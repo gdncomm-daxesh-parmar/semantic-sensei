@@ -856,6 +856,42 @@ def show_product_comparison_dialog(term):
     """Dialog for showing side-by-side product comparison"""
     st.subheader(f"🛍️ Product Comparison: **{term}**")
     
+    # Initialize session state for environment if not exists
+    if 'comparison_environment' not in st.session_state:
+        st.session_state.comparison_environment = "production"
+    if 'comparison_fetched' not in st.session_state:
+        st.session_state.comparison_fetched = False
+    if 'comparison_term' not in st.session_state:
+        st.session_state.comparison_term = term
+    
+    # Reset if term changed
+    if st.session_state.comparison_term != term:
+        st.session_state.comparison_fetched = False
+        st.session_state.comparison_term = term
+    
+    # Environment selector - always shown
+    col_env1, col_env2, col_env3 = st.columns([2, 2, 2])
+    with col_env1:
+        environment = st.selectbox(
+            "🌍 Select Environment",
+            options=["production", "lowerEnv"],
+            index=0 if st.session_state.comparison_environment == "production" else 1,
+            help="Production: Blibli API | Lower Env: localhost:9090/backend/search/products with boost params",
+            key=f"env_selector_{term}"
+        )
+        st.session_state.comparison_environment = environment
+    
+    with col_env2:
+        # Fetch/Refresh button
+        if st.button("🔄 Fetch Products", type="primary", use_container_width=True, key=f"fetch_products_{term}"):
+            st.session_state.comparison_fetched = True
+            st.rerun()
+    
+    # Only proceed if user clicked fetch
+    if not st.session_state.comparison_fetched:
+        st.info("👆 Select an environment and click 'Fetch Products' to compare results")
+        return
+    
     # Get term data from database
     connector = get_db()
     if not connector:
@@ -876,6 +912,12 @@ def show_product_comparison_dialog(term):
     active_categories = [cat for cat in model_categories if cat.get('boostValue', 100) > 0]
     category_codes = [cat['code'] for cat in active_categories]
     
+    # Build boost parameter for lowerEnv (format: c1:100,c2:101,c3:103)
+    boost_param = None
+    if environment == "lowerEnv" and active_categories:
+        boost_pairs = [f"{cat['code']}:{cat.get('boostValue', 100)}" for cat in active_categories]
+        boost_param = ",".join(boost_pairs)
+    
     # Show active AI categories (always expanded)
     if active_categories:
         st.markdown("**📋 AI Categories Applied:**")
@@ -883,6 +925,10 @@ def show_product_comparison_dialog(term):
             score = cat.get('score', 0)
             boost = cat.get('boostValue', 100)
             st.markdown(f"• **{cat['name']}** `{cat['code']}` - Score: {score} | Boost: {boost}")
+        
+        if environment == "lowerEnv" and boost_param:
+            st.info(f"📊 Boost Parameter: `{boost_param}`")
+        
         st.markdown("<div style='margin: 15px 0;'></div>", unsafe_allow_html=True)
     
     # Determine term type for AI category request
@@ -891,13 +937,27 @@ def show_product_comparison_dialog(term):
     # Fetch products for both scenarios
     with st.spinner("🔄 Fetching products..."):
         # Control: With searchTerm, no category filter
-        control_products, control_error = fetch_products(term, category_codes=None, limit=40, include_search_term=True)
+        control_products, control_error = fetch_products(
+            term, 
+            category_codes=None, 
+            limit=40, 
+            include_search_term=True,
+            environment=environment,
+            boost_param=None
+        )
         
         # AI Categories: Behavior depends on termType
         # - boostingConfiguration: Include searchTerm with category filters (boost existing results)
         # - filterConfiguration: Only category filters, no searchTerm (pure category filtering)
         include_search_term_in_ai = (term_type == 'boostingConfiguration')
-        ai_products, ai_error = fetch_products(term, category_codes=category_codes, limit=40, include_search_term=include_search_term_in_ai)
+        ai_products, ai_error = fetch_products(
+            term, 
+            category_codes=category_codes, 
+            limit=40, 
+            include_search_term=include_search_term_in_ai,
+            environment=environment,
+            boost_param=boost_param
+        )
     
     # Display any errors
     if control_error:
@@ -961,10 +1021,11 @@ def show_product_comparison_dialog(term):
     col_control, col_separator, col_ai = st.columns([10, 0.5, 10])
     
     with col_control:
-        st.markdown("""
+        env_label = "🌐 Production" if environment == "production" else "🧪 Lower Env"
+        st.markdown(f"""
         <div style="background-color: #f8f9fa; padding: 15px; border-radius: 10px; border: 2px solid #868e96;">
             <h3 style="margin: 0; color: #495057;">📦 Control Response</h3>
-            <p style="margin: 5px 0 0 0; font-size: 0.9em; color: #6c757d;">No category filters</p>
+            <p style="margin: 5px 0 0 0; font-size: 0.9em; color: #6c757d;">No category filters | {env_label}</p>
         </div>
         """, unsafe_allow_html=True)
         
@@ -1001,10 +1062,12 @@ def show_product_comparison_dialog(term):
         """, unsafe_allow_html=True)
     
     with col_ai:
-        st.markdown("""
+        env_label = "🌐 Production" if environment == "production" else "🧪 Lower Env"
+        boost_info = f" + Boost Params" if environment == "lowerEnv" and boost_param else ""
+        st.markdown(f"""
         <div style="background-color: #e7f5ff; padding: 15px; border-radius: 10px; border: 2px solid #1971c2;">
             <h3 style="margin: 0; color: #1971c2;">🤖 AI Category Response</h3>
-            <p style="margin: 5px 0 0 0; font-size: 0.9em; color: #1864ab;">With AI filters</p>
+            <p style="margin: 5px 0 0 0; font-size: 0.9em; color: #1864ab;">With AI filters{boost_info} | {env_label}</p>
         </div>
         """, unsafe_allow_html=True)
         
