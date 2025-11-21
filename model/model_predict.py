@@ -46,21 +46,21 @@ The classification must be performed based on the current search trends and deep
 
 Your predictions must be based on a comprehensive "research and thinking model" that considers the following query contexts:
 
-1. **Commercial Intent (Primary):** Is the term a direct product name, a brand name, or a category keyword? (e.g., 'eser' is a known local perfume brand, 'cuculemon' is a known aesthetic tumbler brand).
 1. **Grounded Research (Product Derivation):** First, autonomously determine the dominant consumer product or brand associated with the search term by referencing current Indonesian e-commerce data (Shopee, Tokopedia, local trends).
-2. **Context Determination:** Explicitly identify the derived product context (e.g., 'NOX' is a well-known Padel racket brand, 'eser' is a local perfume brand).
-1. **Grounded Research (Product Derivation):** First, autonomously determine the dominant consumer product or brand associated with the search term by referencing current Indonesian e-commerce data (Shopee, Tokopedia, local trends).
+
 2. **Context Determination:** Explicitly identify the derived product context (e.g., 'NOX' is a well-known Padel racket brand, 'eser' is a local perfume brand).
 
-2. **Linguistic Context (Local Slang/Typo):** Is it an abbreviation, misspelling, or a term unique to Indonesian slang (e.g., 'kaos' for T-shirt, or common typos)?
+3. **Commercial Intent:** Is the term a direct product name, a brand name, or a category keyword? (e.g., 'eser' is a known local perfume brand, 'cuculemon' is a known aesthetic tumbler brand).
 
-3. **Trending & Viral Products:** Does the term correlate with currently viral or "aesthetic" goods frequently sold on TikTok Shop, Shopee, or Tokopedia (e.g., viral tumblers, local cosmetic lines)?
+4. **Linguistic Context (Local Slang/Typo):** Is it an abbreviation, misspelling, or a term unique to Indonesian slang (e.g., 'kaos' for T-shirt, or common typos)?
 
-4. **Functional/Usage Context:** If the term is generic, what is the most common use case? (e.g., 'dance ladies' refers to dancewear, which maps to athletic apparel).
+5. **Trending & Viral Products:** Does the term correlate with currently viral or "aesthetic" goods frequently sold on TikTok Shop, Shopee, or Tokopedia (e.g., viral tumblers, local cosmetic lines)?
 
-5. **Ambiguity Assessment:** If the term has zero commercial signal in Indonesia (e.g., a foreign forum handle or nonsensical), classify as uncertain.
+6. **Functional/Usage Context:** If the term is generic, what is the most common use case? (e.g., 'dance ladies' refers to dancewear, which maps to athletic apparel).
 
-6. **Multi-Context Resolution (NEW):** If the term (e.g., 'nox') is a known brand in a high-traffic consumer category (e.g., Padel/Sports) AND also a match for a low-traffic industrial/B2B product (e.g., automotive sensor), **PRIORITIZE the high-traffic consumer category** (Sports) for the top predictions.
+7. **Ambiguity Assessment:** If the term has zero commercial signal in Indonesia (e.g., a foreign forum handle or nonsensical), classify as uncertain.
+
+8. **Multi-Context Resolution:** If the term (e.g., 'nox') is a known brand in a high-traffic consumer category (e.g., Padel/Sports) AND also a match for a low-traffic industrial/B2B product (e.g., automotive sensor), **PRIORITIZE the high-traffic consumer category** (Sports) for the top predictions.
 
 OUTPUT RULES:
 - Always return JSON only. No extra commentary.
@@ -109,8 +109,7 @@ Now classify the following search term (produce only JSON):
             "temperature": 0.25,
             "maxOutputTokens": 10000,
             "responseMimeType": "application/json"
-        },
-        "tools": [{"google_search": {}}]
+        }
     }
     
     # Adding the API key to the URL as a query parameter
